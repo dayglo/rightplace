@@ -1,0 +1,154 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+venv/
+env/
+ENV/
+server/venv/
+.venv
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage/
+*.cover
+.hypothesis/
+.cache
+nosetests.xml
+coverage.xml
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.envrc
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ML Models (can be large - use git LFS if needed)
+*.pth
+*.pt
+*.h5
+*.pb
+*.onnx
+*.pkl
+*.pickle
+server/app/ml/models/*
+!server/app/ml/models/.gitkeep
+
+# Datasets (can be large - use git LFS or separate storage)
+datasets/*
+!datasets/.gitkeep
+!datasets/README.md
+
+# Node.js (if frontend is added)
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm
+.yarn/
+package-lock.json
+yarn.lock
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.temp/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Server data directory (runtime data)
+server/data/*
+!server/data/.gitkeep
+
+# Test fixtures (keep structure but optionally ignore large datasets)
+# Uncomment if test images are too large:
+# tests/fixtures/images/**/*.jpg
+# tests/fixtures/images/**/*.png
+
+# Build outputs
+*.pyc
+*.pyo
+
+# Local development scripts
+scratch/
+.scratch/
+debug/
