@@ -1,0 +1,30 @@
+# Prison Roll Call - Server Dependencies
+# Python 3.11+
+
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Data Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+
+# Machine Learning & Computer Vision
+numpy>=2.0,<2.3
+opencv-python-headless>=4.9.0  # Headless version for headless environments (WSL, servers)
+deepface>=0.0.93
+tf-keras>=2.16.0
+tensorflow>=2.20.0  # CPU version (GPU support requires separate CUDA setup)
+
+# Testing
+pytest==8.0.0
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.25.2
+
+# Development Tools
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
