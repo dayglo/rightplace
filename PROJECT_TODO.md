@@ -85,11 +85,11 @@
 - [x] ✅ All tests pass (9/9 passing)
 
 #### 2.2 Face Embedding (Facenet512/ArcFace)
-- [ ] 📋 FaceEmbedder wrapper interface designed
-- [ ] 🏗️ FaceEmbedder class built using DeepFace (Facenet512 model)
-- [ ] 🧪 Embedding extraction tests created
-- [ ] 🧪 Model switching tests (Facenet512 vs ArcFace)
-- [ ] ✅ All tests pass
+- [x] 📋 FaceEmbedder wrapper interface designed
+- [x] 🏗️ FaceEmbedder class built using DeepFace (Facenet512 model)
+- [x] 🧪 Embedding extraction tests created
+- [x] 🧪 Model switching tests (Facenet512 vs ArcFace)
+- [x] ✅ All tests pass (15/15 passing)
 
 #### 2.3 Face Matching
 - [ ] 📋 FaceMatcher with cosine similarity designed
