@@ -73,4 +73,4 @@ class MatchResult(BaseModel):
     recommendation: MatchRecommendation
     at_expected_location: bool | None
     all_matches: list[dict]
-    detection: DetectionResult
+    detection: DetectionResult | None = None
