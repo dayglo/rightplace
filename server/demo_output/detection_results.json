@@ -1,0 +1,332 @@
+{
+  "timestamp": "2026-01-05T23:55:57.965876",
+  "backend": "retinaface",
+  "statistics": {
+    "total_images": 36,
+    "detected": 36,
+    "not_detected": 0,
+    "multi_face": 6,
+    "quality_excellent": 29,
+    "quality_acceptable": 7,
+    "quality_poor": 0,
+    "average_quality": 0.9222222222222223,
+    "issues": {
+      "blur": 7,
+      "multi_face": 6
+    }
+  },
+  "results": [
+    {
+      "image": "single_enrollment/harbhajan_singh_enroll.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "single_enrollment/harbhajan_singh_verify.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 0.6,
+      "face_count": 1,
+      "issues": [
+        "blur"
+      ]
+    },
+    {
+      "image": "single_enrollment/lucy_liu_enroll.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "single_enrollment/lucy_liu_verify.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "single_enrollment/michelle_rodriguez_enroll.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "single_enrollment/michelle_rodriguez_verify.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "single_enrollment/sergio_garcia_enroll.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 0.6,
+      "face_count": 1,
+      "issues": [
+        "blur"
+      ]
+    },
+    {
+      "image": "single_enrollment/sergio_garcia_verify.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 0.6,
+      "face_count": 1,
+      "issues": [
+        "blur"
+      ]
+    },
+    {
+      "image": "single_enrollment/vanessa_williams_enroll.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "single_enrollment/vanessa_williams_verify.jpg",
+      "category": "single_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/chen_shui_bian_enroll_1.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/chen_shui_bian_enroll_2.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/chen_shui_bian_verify_1.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/chen_shui_bian_verify_2.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/chen_shui_bian_verify_3.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 3,
+      "issues": [
+        "multi_face"
+      ]
+    },
+    {
+      "image": "dual_enrollment/conchita_martinez_enroll_1.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/conchita_martinez_enroll_2.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/conchita_martinez_verify_1.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/king_abdullah_ii_enroll_1.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/king_abdullah_ii_enroll_2.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 0.6,
+      "face_count": 2,
+      "issues": [
+        "multi_face",
+        "blur"
+      ]
+    },
+    {
+      "image": "dual_enrollment/king_abdullah_ii_verify_1.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "dual_enrollment/king_abdullah_ii_verify_2.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 2,
+      "issues": [
+        "multi_face"
+      ]
+    },
+    {
+      "image": "dual_enrollment/king_abdullah_ii_verify_3.jpg",
+      "category": "dual_enrollment",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "multi_verify/al_pacino_enroll.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 0.6,
+      "face_count": 1,
+      "issues": [
+        "blur"
+      ]
+    },
+    {
+      "image": "multi_verify/al_pacino_verify_1.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 0.6,
+      "face_count": 2,
+      "issues": [
+        "multi_face",
+        "blur"
+      ]
+    },
+    {
+      "image": "multi_verify/al_pacino_verify_2.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 2,
+      "issues": [
+        "multi_face"
+      ]
+    },
+    {
+      "image": "multi_verify/jayson_williams_enroll.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "multi_verify/jayson_williams_verify_1.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "multi_verify/jayson_williams_verify_2.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "multi_verify/lee_hoi_chang_enroll.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 3,
+      "issues": [
+        "multi_face"
+      ]
+    },
+    {
+      "image": "multi_verify/lee_hoi_chang_verify_1.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "multi_verify/lee_hoi_chang_verify_2.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "multi_verify/lee_hoi_chang_verify_3.jpg",
+      "category": "multi_verify",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "negative_matching/adam_sandler.jpg",
+      "category": "negative_matching",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    },
+    {
+      "image": "negative_matching/alicia_silverstone.jpg",
+      "category": "negative_matching",
+      "detected": true,
+      "quality": 0.6,
+      "face_count": 1,
+      "issues": [
+        "blur"
+      ]
+    },
+    {
+      "image": "negative_matching/muhammad_saeed_al_sahhaf.jpg",
+      "category": "negative_matching",
+      "detected": true,
+      "quality": 1.0,
+      "face_count": 1,
+      "issues": []
+    }
+  ]
+}

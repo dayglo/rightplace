@@ -105,11 +105,11 @@
 - [x] ✅ All tests pass
 
 #### 2.5 Face Recognition Service
-- [ ] 📋 Service integration designed (app/services/face_recognition.py)
-- [ ] 🏗️ FaceRecognitionService built (DeepFace wrapper orchestration)
-- [ ] 🧪 End-to-end service tests created
+- [x] 📋 Service integration designed (app/services/face_recognition.py)
+- [x] 🏗️ FaceRecognitionService built (DeepFace wrapper orchestration)
+- [x] 🧪 End-to-end service tests created
 - [ ] 🧪 GPU vs CPU performance comparison tests
-- [ ] ✅ All tests pass
+- [x] ✅ All tests pass
 
 #### 2.6 Detection Endpoint
 - [ ] 📋 /detect API designed
