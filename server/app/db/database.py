@@ -144,7 +144,7 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
     from app.config import Settings
     
     settings = Settings()
-    db_path = settings.db_path
+    db_path = settings.database_url
     
     conn = get_connection(db_path)
     try:

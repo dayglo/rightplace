@@ -112,10 +112,10 @@
 - [x] ✅ All tests pass
 
 #### 2.6 Detection Endpoint
-- [ ] 📋 /detect API designed
-- [ ] 🏗️ Detection endpoint built
-- [ ] 🧪 Detection API integration tests created
-- [ ] ✅ All tests pass
+- [x] 📋 /detect API designed
+- [x] 🏗️ Detection endpoint built
+- [x] 🧪 Detection API integration tests created
+- [x] ✅ All tests pass
 
 #### 2.7 Enrollment Endpoint
 - [ ] 📋 /enrollment/{inmate_id} API designed
