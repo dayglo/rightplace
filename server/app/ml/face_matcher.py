@@ -104,21 +104,23 @@ class FaceMatcher:
     ) -> MatchResult:
         """
         Find best match for query embedding in enrolled database.
-        
+
+        DEPRECATED: Use find_match_ensemble() for better multi-photo accuracy.
+
         Performs 1:N matching by comparing the query embedding against
         all enrolled embeddings using cosine similarity.
-        
+
         Args:
             query_embedding: Query face embedding (512-dim normalized vector)
             enrolled_embeddings: Dictionary mapping inmate_id to embedding
-            
+
         Returns:
             MatchResult with best match, confidence, and recommendation
         """
         if not enrolled_embeddings:
             logger.warning("Empty enrollment database - no matches possible")
             return self._no_match_result()
-        
+
         # Calculate similarities for all enrolled embeddings
         matches = []
         for inmate_id, enrolled_embedding in enrolled_embeddings.items():
@@ -127,8 +129,114 @@ class FaceMatcher:
                 "inmate_id": inmate_id,
                 "confidence": float(similarity)
             })
-        
+
         # Sort by confidence (descending)
+        matches.sort(key=lambda x: x["confidence"], reverse=True)
+
+        # Best match
+        best_match = matches[0]
+        best_inmate_id = best_match["inmate_id"]
+        best_confidence = best_match["confidence"]
+
+        # Determine if match is above threshold
+        matched = best_confidence >= self.threshold
+        recommendation = self.get_recommendation(best_confidence)
+
+        logger.debug(
+            f"Best match: {best_inmate_id if matched else 'none'} "
+            f"(confidence: {best_confidence:.4f}, recommendation: {recommendation.value})"
+        )
+
+        # Build result (note: we're not populating all fields yet, just what's needed for matching)
+        # The full MatchResult with inmate details and detection info will be added
+        # when we integrate with the Face Recognition Service in Phase 2.5
+        return MatchResult(
+            matched=matched,
+            inmate_id=best_inmate_id if matched else None,
+            inmate=None,  # Will be populated by service layer
+            confidence=best_confidence,
+            threshold_used=self.threshold,
+            recommendation=recommendation,
+            at_expected_location=None,  # Will be checked by service layer
+            all_matches=matches,
+            detection=None,  # Will be populated by service layer
+        )
+    
+    def find_match_ensemble(
+        self,
+        query_embedding: np.ndarray,
+        enrolled_data: dict[str, list[dict]]
+    ) -> MatchResult:
+        """
+        Find best match using ensemble matching strategy.
+        
+        This method implements a production-ready ensemble approach:
+        - 70% weight on best individual match (MAX similarity)
+        - 30% weight on quality-weighted average similarity
+        
+        This approach is robust to photo quality variation and provides
+        better accuracy than simple averaging.
+        
+        Args:
+            query_embedding: Query face embedding (512-dim normalized vector)
+            enrolled_data: Dictionary mapping inmate_id to list of dicts:
+                {
+                    "inmate_id": [
+                        {"embedding": np.ndarray, "quality": float, "photo_path": str},
+                        ...
+                    ]
+                }
+        
+        Returns:
+            MatchResult with best match, confidence, and recommendation
+        """
+        if not enrolled_data:
+            logger.warning("Empty enrollment database - no matches possible")
+            return self._no_match_result()
+        
+        # Calculate ensemble confidence for each inmate
+        matches = []
+        for inmate_id, embeddings_data in enrolled_data.items():
+            # Calculate similarities for all enrollment photos
+            similarities = []
+            qualities = []
+            
+            for emb_data in embeddings_data:
+                similarity = self.calculate_similarity(query_embedding, emb_data["embedding"])
+                similarities.append(similarity)
+                qualities.append(emb_data["quality"])
+            
+            # Strategy 1: Best Match (MAX) - 70% weight
+            best_match = max(similarities)
+            
+            # Strategy 2: Quality-Weighted Average - 30% weight
+            qualities_array = np.array(qualities)
+            similarities_array = np.array(similarities)
+            
+            # Normalize quality weights
+            if qualities_array.sum() > 0:
+                weights = qualities_array / qualities_array.sum()
+                weighted_avg = np.dot(similarities_array, weights)
+            else:
+                weighted_avg = np.mean(similarities_array)
+            
+            # Ensemble confidence: 70% best match + 30% weighted average
+            ensemble_confidence = 0.7 * best_match + 0.3 * weighted_avg
+            
+            matches.append({
+                "inmate_id": inmate_id,
+                "confidence": float(ensemble_confidence),
+                "best_match": float(best_match),
+                "weighted_avg": float(weighted_avg),
+                "num_photos": len(embeddings_data)
+            })
+            
+            logger.debug(
+                f"Inmate {inmate_id}: best={best_match:.4f}, weighted_avg={weighted_avg:.4f}, "
+                f"ensemble={ensemble_confidence:.4f} ({len(embeddings_data)} photos)"
+            )
+        
+        # Sort by ensemble confidence (descending)
         matches.sort(key=lambda x: x["confidence"], reverse=True)
         
         # Best match
@@ -140,14 +248,11 @@ class FaceMatcher:
         matched = best_confidence >= self.threshold
         recommendation = self.get_recommendation(best_confidence)
         
-        logger.debug(
-            f"Best match: {best_inmate_id if matched else 'none'} "
+        logger.info(
+            f"Ensemble match: {best_inmate_id if matched else 'none'} "
             f"(confidence: {best_confidence:.4f}, recommendation: {recommendation.value})"
         )
         
-        # Build result (note: we're not populating all fields yet, just what's needed for matching)
-        # The full MatchResult with inmate details and detection info will be added
-        # when we integrate with the Face Recognition Service in Phase 2.5
         return MatchResult(
             matched=matched,
             inmate_id=best_inmate_id if matched else None,

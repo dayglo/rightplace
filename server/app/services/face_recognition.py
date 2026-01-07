@@ -149,6 +149,21 @@ class FaceRecognitionService:
                 quality_issues=detection.quality_issues,
             )
         
+        # Check for multiple faces - enrollment requires exactly 1 face
+        if detection.face_count != 1:
+            logger.warning(
+                f"Multiple faces detected ({detection.face_count}) for inmate {inmate_id} - "
+                "enrollment requires exactly 1 face"
+            )
+            return EnrollmentResult(
+                success=False,
+                inmate_id=inmate_id,
+                quality=detection.quality,
+                enrolled_at=None,
+                message=f"Multiple faces detected ({detection.face_count}) - enrollment requires exactly 1 face",
+                quality_issues=detection.quality_issues,
+            )
+        
         # Check quality against enrollment threshold
         if detection.quality < self.policy.enrollment_quality_threshold:
             logger.warning(
@@ -171,12 +186,14 @@ class FaceRecognitionService:
         logger.debug(f"Extracting embedding for inmate {inmate_id}")
         embedding = self.embedder.extract(image_path)
         
-        # Store embedding
-        logger.debug(f"Storing embedding for inmate {inmate_id}")
+        # Store embedding with quality score and photo path
+        logger.debug(f"Storing embedding for inmate {inmate_id} (quality: {detection.quality:.2f})")
         self.embedding_repo.save(
             inmate_id=inmate_id,
             embedding=embedding,
-            model_version=self.embedder.model_name,
+            model_version=self.embedder.model,
+            quality=detection.quality,
+            photo_path=str(Path(image_path).name),  # Store filename only
         )
         
         # Update inmate record
@@ -246,10 +263,10 @@ class FaceRecognitionService:
         logger.debug("Extracting embedding from verification image")
         embedding = self.embedder.extract(image_path)
         
-        # Get all enrolled embeddings
-        enrolled_embeddings = self.embedding_repo.get_all()
+        # Get all enrolled embeddings with quality scores for ensemble matching
+        enrolled_data = self.embedding_repo.get_all_with_quality()
         
-        if not enrolled_embeddings:
+        if not enrolled_data:
             logger.warning("No enrolled inmates to match against")
             return MatchResult(
                 matched=False,
@@ -263,9 +280,9 @@ class FaceRecognitionService:
                 detection=detection,
             )
         
-        # Find match
-        logger.debug(f"Matching against {len(enrolled_embeddings)} enrolled inmates")
-        match_result = self.matcher.find_match(embedding, enrolled_embeddings)
+        # Find match using ensemble approach (70% best match + 30% quality-weighted average)
+        logger.debug(f"Matching against {len(enrolled_data)} enrolled inmates using ensemble matching")
+        match_result = self.matcher.find_match_ensemble(embedding, enrolled_data)
         
         # Populate detection in result
         match_result.detection = detection

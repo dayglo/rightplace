@@ -81,7 +81,7 @@ def init_db(conn: sqlite3.Connection) -> None:
     """
     Initialize the database schema.
 
-    Loads and executes the initial migration SQL to create all tables,
+    Loads and executes all migration SQL files to create tables,
     indexes, and insert default data.
 
     Args:
@@ -91,11 +91,15 @@ def init_db(conn: sqlite3.Connection) -> None:
         This function is idempotent - safe to call multiple times.
         Uses IF NOT EXISTS clauses to avoid errors on repeated calls.
     """
-    # Load initial migration SQL
-    sql = load_migration_sql("001_initial.sql")
+    # Load and execute migrations in order
+    migrations = [
+        "001_initial.sql",
+        "002_multiple_embeddings.sql",
+    ]
     
-    # Execute migration (use executescript for multiple statements)
-    conn.executescript(sql)
+    for migration_file in migrations:
+        sql = load_migration_sql(migration_file)
+        conn.executescript(sql)
     
     # Commit changes
     conn.commit()

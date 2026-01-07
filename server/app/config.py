@@ -106,7 +106,7 @@ class Settings(BaseSettings):
 
     # Database configuration
     database_url: str = Field(
-        default="sqlite:///data/prison_rollcall.db",
+        default="data/prison_rollcall.db",
         description="Database connection URL",
     )
 
