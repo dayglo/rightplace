@@ -45,3 +45,21 @@ class RollCall(BaseModel):
     route: list[RouteStop]
     officer_id: str
     notes: str = ""
+
+
+class RollCallCreate(BaseModel):
+    """Data for creating a new roll call."""
+
+    name: str
+    scheduled_at: datetime
+    route: list[RouteStop]
+    officer_id: str
+    notes: str = ""
+
+
+class RollCallUpdate(BaseModel):
+    """Data for updating a roll call (partial updates supported)."""
+
+    name: str | None = None
+    scheduled_at: datetime | None = None
+    notes: str | None = None

@@ -74,3 +74,30 @@ class MatchResult(BaseModel):
     at_expected_location: bool | None
     all_matches: list[dict]
     detection: DetectionResult | None = None
+
+
+class EnrollmentSuccessResponse(BaseModel):
+    """Successful enrollment response."""
+
+    success: bool = True
+    inmate_id: str
+    quality: float
+    enrolled_at: str
+    embedding_version: str
+
+
+class EnrollmentErrorResponse(BaseModel):
+    """Failed enrollment response."""
+
+    success: bool = False
+    error: str
+    quality: float
+    quality_issues: list[str]
+    message: str
+
+
+class InmateNotFoundResponse(BaseModel):
+    """Inmate not found error response."""
+
+    error: str = "inmate_not_found"
+    message: str

@@ -118,57 +118,57 @@
 - [x] ✅ All tests pass
 
 #### 2.7 Enrollment Endpoint
-- [ ] 📋 /enrollment/{inmate_id} API designed
-- [ ] 🏗️ Enrollment endpoint built
-- [ ] 🧪 Enrollment flow integration tests created
-- [ ] ✅ All tests pass
+- [x] 📋 /enrollment/{inmate_id} API designed
+- [x] 🏗️ Enrollment endpoint built
+- [x] 🧪 Enrollment flow integration tests created
+- [x] ✅ All tests pass
 
 #### 2.8 Verification Endpoint
-- [ ] 📋 /verify and /verify/quick APIs designed
-- [ ] 🏗️ Verification endpoints built
-- [ ] 🧪 Verification flow integration tests created
-- [ ] 🧪 Accuracy benchmarking with LFW test set
-- [ ] ✅ All tests pass
+- [x] 📋 /verify and /verify/quick APIs designed
+- [x] 🏗️ Verification endpoints built
+- [x] 🧪 Verification flow integration tests created
+- [x] 🧪 Accuracy benchmarking with LFW test set
+- [x] ✅ All tests pass
 
 ---
 
 ### Phase 3: Roll Call Management
 
 #### 3.1 Roll Call Models
-- [ ] 📋 RollCall and RouteStop models designed
-- [ ] 🏗️ Models implemented
-- [ ] 🧪 Model tests created
-- [ ] ✅ All tests pass
+- [x] 📋 RollCall and RouteStop models designed
+- [x] 🏗️ Models implemented
+- [x] 🧪 Model tests created
+- [x] ✅ All tests pass
 
 #### 3.2 Roll Call Repository
-- [ ] 📋 RollCallRepository designed
-- [ ] 🏗️ Repository built (app/db/repositories/rollcall_repo.py)
-- [ ] 🧪 Repository tests created
-- [ ] ✅ All tests pass
+- [x] 📋 RollCallRepository designed
+- [x] 🏗️ Repository built (app/db/repositories/rollcall_repo.py)
+- [x] 🧪 Repository tests created (17 tests)
+- [x] ✅ All tests pass
 
 #### 3.3 Verification Repository
-- [ ] 📋 VerificationRepository designed
-- [ ] 🏗️ Repository built (app/db/repositories/verification_repo.py)
-- [ ] 🧪 Repository tests created
-- [ ] ✅ All tests pass
+- [x] 📋 VerificationRepository designed
+- [x] 🏗️ Repository built (app/db/repositories/verification_repo.py)
+- [x] 🧪 Repository tests created (13 tests)
+- [x] ✅ All tests pass
 
 #### 3.4 Roll Call Service
-- [ ] 📋 RollCallService designed
-- [ ] 🏗️ Service built (app/services/rollcall_service.py)
-- [ ] 🧪 Service tests created
-- [ ] ✅ All tests pass
+- [x] 📋 RollCallService designed
+- [x] 🏗️ Service built (app/services/rollcall_service.py)
+- [x] 🧪 Service tests created (17 tests)
+- [x] ✅ All tests pass
 
 #### 3.5 Roll Call Endpoints
-- [ ] 📋 Roll call CRUD APIs designed
-- [ ] 🏗️ Roll call endpoints built (app/api/routes/rollcalls.py)
-- [ ] 🧪 Roll call API integration tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Roll call CRUD APIs designed
+- [x] 🏗️ Roll call endpoints built (app/api/routes/rollcalls.py)
+- [x] 🧪 Roll call API integration tests created (15 tests)
+- [x] ✅ All tests pass
 
 #### 3.6 Verification Recording
-- [ ] 📋 /rollcalls/{id}/verification API designed
-- [ ] 🏗️ Verification recording endpoint built
-- [ ] 🧪 Verification recording tests created
-- [ ] ✅ All tests pass
+- [x] 📋 /rollcalls/{id}/verification API designed
+- [x] 🏗️ Verification recording endpoint built
+- [x] 🧪 Verification recording tests created
+- [x] ✅ All tests pass
 
 ---
 

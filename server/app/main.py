@@ -58,11 +58,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     
     # Register routes
-    from app.api.routes import health, inmates, locations, verification
+    from app.api.routes import enrollment, health, inmates, locations, rollcalls, verification
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
     app.include_router(inmates.router, prefix="/api/v1", tags=["inmates"])
     app.include_router(locations.router, prefix="/api/v1", tags=["locations"])
+    app.include_router(enrollment.router, prefix="/api/v1", tags=["enrollment"])
     app.include_router(verification.router, prefix="/api/v1", tags=["verification"])
+    app.include_router(rollcalls.router, prefix="/api/v1", tags=["rollcalls"])
     
     return app
 
