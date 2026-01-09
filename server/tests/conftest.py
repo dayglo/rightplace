@@ -98,3 +98,56 @@ def client(test_db):
     
     # Clear overrides
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def sync_service(test_db):
+    """
+    Create a SyncService instance for testing.
+    
+    Returns:
+        SyncService instance configured with test database
+    """
+    from app.services.sync_service import SyncService
+    from app.db.repositories.verification_repo import VerificationRepository
+    from app.db.repositories.rollcall_repo import RollCallRepository
+    from app.db.database import get_connection
+    from unittest.mock import Mock
+    
+    conn = get_connection(test_db)
+    
+    # Create required dependencies
+    verification_repo = VerificationRepository(conn)
+    rollcall_repo = RollCallRepository(conn)
+    
+    # Mock face recognition service for simpler testing
+    face_service = Mock()
+    
+    service = SyncService(
+        verification_repo=verification_repo,
+        rollcall_repo=rollcall_repo,
+        face_recognition_service=face_service
+    )
+    
+    yield service
+    
+    conn.close()
+
+
+@pytest.fixture
+def verification_repo(test_db):
+    """
+    Create a VerificationRepository instance for testing.
+    
+    Returns:
+        VerificationRepository instance configured with test database
+    """
+    from app.db.repositories.verification_repo import VerificationRepository
+    from app.db.database import get_connection
+    
+    conn = get_connection(test_db)
+    repo = VerificationRepository(conn)
+    
+    yield repo
+    
+    conn.close()
