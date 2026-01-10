@@ -261,7 +261,7 @@ class FaceMatcher:
             threshold_used=self.threshold,
             recommendation=recommendation,
             at_expected_location=None,  # Will be checked by service layer
-            all_matches=matches,
+            all_matches=matches[:10],  # Limit to top 10 matches to avoid huge responses
             detection=None,  # Will be populated by service layer
         )
     

@@ -287,6 +287,13 @@ class FaceRecognitionService:
         # Populate detection in result
         match_result.detection = detection
         
+        # Enrich all_matches with inmate details (name, inmate_number) for easier identification
+        for match in match_result.all_matches:
+            inmate = self.inmate_repo.get_by_id(match["inmate_id"])
+            if inmate:
+                match["inmate_number"] = inmate.inmate_number
+                match["name"] = f"{inmate.first_name} {inmate.last_name}"
+        
         # If matched, populate inmate details
         if match_result.matched and match_result.inmate_id:
             inmate = self.inmate_repo.get_by_id(match_result.inmate_id)

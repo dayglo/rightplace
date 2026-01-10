@@ -5,6 +5,8 @@ Provides factory functions for creating and managing service instances.
 """
 from functools import lru_cache
 
+from fastapi import Depends
+
 from app.config import Settings
 from app.db.database import get_db
 from app.db.repositories.embedding_repo import EmbeddingRepository
@@ -48,16 +50,16 @@ def get_face_matcher() -> FaceMatcher:
 
 
 def get_face_recognition_service(
-    db=None,
+    db = Depends(get_db),
 ) -> FaceRecognitionService:
     """
     Get FaceRecognitionService instance.
     
     Note: Not cached because it depends on database connection which
-    should be created per request.
+    is created per request via FastAPI dependency injection.
     
     Args:
-        db: Database connection (optional, will create if None)
+        db: Database connection from FastAPI dependency
         
     Returns:
         FaceRecognitionService instance
@@ -69,11 +71,7 @@ def get_face_recognition_service(
     embedder = get_face_embedder()
     matcher = get_face_matcher()
     
-    # Get or create database connection
-    if db is None:
-        db = next(get_db())
-    
-    # Create repositories
+    # Create repositories with the per-request database connection
     inmate_repo = InmateRepository(db)
     embedding_repo = EmbeddingRepository(db)
     

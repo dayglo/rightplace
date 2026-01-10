@@ -1,15 +1,17 @@
 """
 Health check endpoint for Prison Roll Call API.
 """
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
+from app.db.database import get_db
 from app.main import get_uptime_seconds
 
 router = APIRouter()
 
 
 @router.get("/health")
-async def health_check():
+async def health_check(db: Session = Depends(get_db)):
     """
     Health check endpoint.
     
@@ -18,11 +20,20 @@ async def health_check():
     Returns:
         dict: Health check response with status information
     """
-    # For MVP, model_loaded is always False (ML pipeline not implemented yet)
-    # enrolled_count will be 0 until we implement enrollment
+    # Count inmates with is_enrolled=True
+    from app.db.repositories.inmate_repo import InmateRepository
+    inmate_repo = InmateRepository(db)
+    enrolled_count = db.execute(
+        "SELECT COUNT(*) FROM inmates WHERE is_enrolled = 1"
+    ).fetchone()[0]
+    
+    # Check if face recognition model is loaded
+    # For now, we consider it loaded if we have any enrolled inmates
+    model_loaded = enrolled_count > 0
+    
     return {
         "status": "healthy",
-        "model_loaded": False,
-        "enrolled_count": 0,
+        "model_loaded": model_loaded,
+        "enrolled_count": enrolled_count,
         "uptime_seconds": get_uptime_seconds(),
     }
