@@ -70,6 +70,9 @@ class SyncService:
         Returns:
             Result of processing the item
         """
+        import tempfile
+        import os
+        
         try:
             # Decode base64 image
             try:
@@ -81,30 +84,57 @@ class SyncService:
                     error=f"Invalid base64 encoding: {str(e)}"
                 )
 
-            # Verify the face (this would call face recognition service)
-            # For now, we'll create a basic verification record
-            # In a real implementation, this would:
-            # 1. Call face_service.verify_from_bytes(image_bytes, location_id)
-            # 2. Get match result
-            # 3. Create verification record based on result
-
-            # In a real implementation, we would:
-            # 1. Call face_service.verify() with the image
-            # 2. Get the match result with inmate_id
-            # 3. Create verification record with the matched inmate
-            #
-            # For now, we'll just return success without creating a verification
-            # since we don't have a real inmate_id to use
-            return QueueItemResult(
-                local_id=item.local_id,
-                success=True,
-                verification={
-                    "matched": False,
-                    "inmate_id": None,
-                    "confidence": 0.0,
-                    "status": "pending"
-                }
-            )
+            # Save image bytes to temporary file for face recognition
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
+                temp_file.write(image_bytes)
+                temp_path = temp_file.name
+            
+            try:
+                # Call face recognition service to verify the face
+                match_result = self.face_service.verify_face(
+                    image_path=temp_path,
+                    location_id=item.location_id
+                )
+                
+                # If matched, create verification record
+                if match_result.matched and match_result.inmate_id:
+                    verification = self.verification_repo.create(
+                        roll_call_id=roll_call_id,
+                        inmate_id=match_result.inmate_id,
+                        location_id=item.location_id,
+                        status=VerificationStatus.VERIFIED,
+                        confidence=match_result.confidence,
+                        is_manual_override=False,
+                    )
+                    
+                    return QueueItemResult(
+                        local_id=item.local_id,
+                        success=True,
+                        verification={
+                            "matched": True,
+                            "inmate_id": match_result.inmate_id,
+                            "confidence": match_result.confidence,
+                            "status": "verified",
+                            "recommendation": match_result.recommendation.value
+                        }
+                    )
+                else:
+                    # No match found
+                    return QueueItemResult(
+                        local_id=item.local_id,
+                        success=True,
+                        verification={
+                            "matched": False,
+                            "inmate_id": None,
+                            "confidence": match_result.confidence,
+                            "status": "not_found",
+                            "recommendation": match_result.recommendation.value
+                        }
+                    )
+            finally:
+                # Clean up temporary file
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
 
         except Exception as e:
             return QueueItemResult(

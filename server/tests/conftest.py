@@ -113,6 +113,7 @@ def sync_service(test_db):
     from app.db.repositories.rollcall_repo import RollCallRepository
     from app.db.database import get_connection
     from unittest.mock import Mock
+    from app.models.face import MatchResult, MatchRecommendation, DetectionResult
     
     conn = get_connection(test_db)
     
@@ -120,8 +121,26 @@ def sync_service(test_db):
     verification_repo = VerificationRepository(conn)
     rollcall_repo = RollCallRepository(conn)
     
-    # Mock face recognition service for simpler testing
+    # Mock face recognition service to return "no match" by default
     face_service = Mock()
+    face_service.verify_face.return_value = MatchResult(
+        matched=False,
+        inmate_id=None,
+        inmate=None,
+        confidence=0.0,
+        threshold_used=0.75,
+        recommendation=MatchRecommendation.NO_MATCH,
+        at_expected_location=None,
+        all_matches=[],
+        detection=DetectionResult(
+            detected=True,
+            face_count=1,
+            bounding_box=None,
+            landmarks=None,
+            quality=0.5,
+            quality_issues=[]
+        )
+    )
     
     service = SyncService(
         verification_repo=verification_repo,
