@@ -232,10 +232,10 @@
 - [x] ✅ All tests pass
 
 #### 1.2 API Client Setup
-- [ ] 📋 API service interface designed
-- [ ] 🏗️ API client built (src/lib/services/api.js)
-- [ ] 🧪 API client tests created
-- [ ] ✅ All tests pass
+- [x] 📋 API service interface designed
+- [x] 🏗️ API client built (src/lib/services/api.ts)
+- [x] 🧪 API client tests created
+- [x] ✅ All tests pass
 
 #### 1.3 Camera Service
 - [ ] 📋 Camera service designed (getUserMedia wrapper)

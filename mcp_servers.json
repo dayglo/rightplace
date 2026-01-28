@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "/home/george_cairns/.nvm/versions/node/v20.20.0/bin/npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest",
+        "--api-key",
+        "ctx7sk-1585421e-b075-4b0b-8e2f-efee3fe3a57f"
+      ]
+    }
+  }
+}
