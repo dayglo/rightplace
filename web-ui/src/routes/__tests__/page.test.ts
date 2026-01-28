@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import Page from './+page.svelte';
+import Page from '../+page.svelte';
 import type { Inmate, Location, RollCall } from '$lib/services/api';
 
 describe('Home/Dashboard Page', () => {
