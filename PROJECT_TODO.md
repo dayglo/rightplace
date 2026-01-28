@@ -238,10 +238,10 @@
 - [x] ✅ All tests pass
 
 #### 1.3 Camera Service
-- [ ] 📋 Camera service designed (getUserMedia wrapper)
-- [ ] 🏗️ Camera service built (src/lib/services/camera.js)
-- [ ] 🧪 Camera service tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Camera service designed (getUserMedia wrapper)
+- [x] 🏗️ Camera service built (src/lib/services/camera.ts)
+- [x] 🧪 Camera service tests created
+- [x] ✅ All tests pass
 
 ---
 
