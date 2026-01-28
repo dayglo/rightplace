@@ -221,7 +221,152 @@
 
 ---
 
-## MOBILE COMPONENTS
+## WEB UI COMPONENTS (Intermediate Demo)
+
+### Phase 1: Project Setup
+
+#### 1.1 SvelteKit Project Initialization
+- [x] 📋 Project structure designed
+- [x] 🏗️ SvelteKit project created with Tailwind CSS
+- [x] 🧪 Vitest configured for unit testing
+- [x] ✅ All tests pass
+
+#### 1.2 API Client Setup
+- [ ] 📋 API service interface designed
+- [ ] 🏗️ API client built (src/lib/services/api.js)
+- [ ] 🧪 API client tests created
+- [ ] ✅ All tests pass
+
+#### 1.3 Camera Service
+- [ ] 📋 Camera service designed (getUserMedia wrapper)
+- [ ] 🏗️ Camera service built (src/lib/services/camera.js)
+- [ ] 🧪 Camera service tests created
+- [ ] ✅ All tests pass
+
+---
+
+### Phase 2: Core Pages
+
+#### 2.1 Home/Dashboard Page
+- [ ] 📋 Design Complete (see docs/web-ui-screens.md)
+- [ ] 🏗️ Home page built (src/routes/+page.svelte)
+- [ ] 🧪 Vitest + agent-browser tests created
+- [ ] ✅ All tests pass
+
+#### 2.2 Prisoner List Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Prisoner list page built (src/routes/prisoners/+page.svelte)
+- [ ] 🧪 Tests created
+- [ ] ✅ All tests pass
+
+#### 2.3 Add Prisoner Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Add prisoner page built (src/routes/prisoners/new/+page.svelte)
+- [ ] 🧪 Form validation tests created
+- [ ] ✅ All tests pass
+
+#### 2.4 Face Enrollment Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Enrollment page built (src/routes/prisoners/[id]/enroll/+page.svelte)
+- [ ] 🧪 Camera + enrollment tests created
+- [ ] ✅ All tests pass
+
+---
+
+### Phase 3: Locations & Roll Calls
+
+#### 3.1 Location List Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Location list page built (src/routes/locations/+page.svelte)
+- [ ] 🧪 Tests created
+- [ ] ✅ All tests pass
+
+#### 3.2 Add Location Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Add location page built (src/routes/locations/new/+page.svelte)
+- [ ] 🧪 Tests created
+- [ ] ✅ All tests pass
+
+#### 3.3 Roll Call List Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Roll call list page built (src/routes/rollcalls/+page.svelte)
+- [ ] 🧪 Tests created
+- [ ] ✅ All tests pass
+
+#### 3.4 Create Roll Call Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Create roll call page built (src/routes/rollcalls/new/+page.svelte)
+- [ ] 🧪 Route builder tests created
+- [ ] ✅ All tests pass
+
+---
+
+### Phase 4: Active Roll Call
+
+#### 4.1 Active Roll Call Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Active roll call page built (src/routes/rollcalls/[id]/active/+page.svelte)
+- [ ] 🧪 Verification loop tests created
+- [ ] ✅ All tests pass
+
+#### 4.2 Webcam Verification Component
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Verification component built (src/lib/components/VerificationCamera.svelte)
+- [ ] 🧪 Continuous scanning tests created
+- [ ] ✅ All tests pass
+
+#### 4.3 Manual Override Flow
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Manual override UI built
+- [ ] 🧪 Override tests created
+- [ ] ✅ All tests pass
+
+---
+
+### Phase 5: Reporting
+
+#### 5.1 Roll Call Report Page
+- [ ] 📋 Design Complete
+- [ ] 🏗️ Report page built (src/routes/rollcalls/[id]/+page.svelte)
+- [ ] 🧪 Report display tests created
+- [ ] ✅ All tests pass
+
+#### 5.2 Export Functionality
+- [ ] 📋 Export design (PDF/CSV)
+- [ ] 🏗️ Export functions built
+- [ ] 🧪 Export tests created
+- [ ] ✅ All tests pass
+
+---
+
+### Phase 6: Polish & Testing
+
+#### 6.1 Reusable Components
+- [ ] 📋 Component library designed
+- [ ] 🏗️ StatCard, PrisonerCard, LocationCard components built
+- [ ] 🧪 Component tests created
+- [ ] ✅ All tests pass
+
+#### 6.2 Error Handling
+- [ ] 📋 Error handling strategy designed
+- [ ] 🏗️ Error boundaries and fallbacks built
+- [ ] 🧪 Error scenario tests created
+- [ ] ✅ All tests pass
+
+#### 6.3 Responsive Design
+- [ ] 📋 Responsive breakpoints defined
+- [ ] 🏗️ Mobile/tablet layouts implemented
+- [ ] 🧪 Responsive tests created (agent-browser viewports)
+- [ ] ✅ All tests pass
+
+#### 6.4 End-to-End Demo Flow
+- [ ] 📋 E2E scenario designed
+- [ ] 🧪 Complete demo flow test created (agent-browser)
+- [ ] ✅ Full demo flow passes
+
+---
+
+## MOBILE COMPONENTS (Future - React Native)
 
 ### Phase 1: Mobile Foundation
 
