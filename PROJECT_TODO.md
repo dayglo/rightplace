@@ -248,10 +248,10 @@
 ### Phase 2: Core Pages
 
 #### 2.1 Home/Dashboard Page
-- [ ] 📋 Design Complete (see docs/web-ui-screens.md)
-- [ ] 🏗️ Home page built (src/routes/+page.svelte)
-- [ ] 🧪 Vitest + agent-browser tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Design Complete (see docs/web-ui-screens.md)
+- [x] 🏗️ Home page built (src/routes/+page.svelte)
+- [x] 🧪 Vitest + agent-browser tests created
+- [x] ✅ All tests pass
 
 #### 2.2 Prisoner List Page
 - [ ] 📋 Design Complete
