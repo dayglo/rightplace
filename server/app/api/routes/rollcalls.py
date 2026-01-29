@@ -1,13 +1,20 @@
 """
 Roll Call CRUD endpoints for Prison Roll Call API.
 """
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from app.db.database import get_db
 from app.db.repositories.rollcall_repo import RollCallRepository
 from app.db.repositories.verification_repo import VerificationRepository
+from app.db.repositories.location_repo import LocationRepository
+from app.db.repositories.inmate_repo import InmateRepository
+from app.db.repositories.schedule_repo import ScheduleRepository
+from app.db.repositories.connection_repo import ConnectionRepository
 from app.services.rollcall_service import RollCallService
+from app.services.pathfinding_service import PathfindingService
+from app.services.rollcall_generator_service import RollCallGeneratorService
 from app.models.rollcall import RollCall, RollCallCreate
 from app.models.verification import (
     Verification,
@@ -257,3 +264,196 @@ async def record_verification(
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# Generate Roll Call Endpoint
+class GenerateRollCallRequest(BaseModel):
+    """Request body for generating a roll call from location and schedule."""
+    location_ids: list[str]
+    scheduled_at: datetime
+    include_empty: bool = True
+    name: str | None = None
+    officer_id: str = "officer-001"
+
+
+class RouteStopResponse(BaseModel):
+    """A stop in the roll call route."""
+    order: int
+    location_id: str
+    location_name: str
+    location_type: str
+    building: str
+    floor: int
+    is_occupied: bool
+    expected_count: int
+    walking_distance_meters: int
+    walking_time_seconds: int
+
+
+class GeneratedRollCallResponse(BaseModel):
+    """Response for generated roll call."""
+    location_ids: list[str]
+    location_names: list[str]
+    scheduled_at: datetime
+    route: list[RouteStopResponse]
+    summary: dict
+
+
+def get_generator_service(db=Depends(get_db)) -> RollCallGeneratorService:
+    """Dependency to get RollCallGeneratorService instance."""
+    location_repo = LocationRepository(db)
+    inmate_repo = InmateRepository(db)
+    schedule_repo = ScheduleRepository(db)
+    connection_repo = ConnectionRepository(db)
+    # PathfindingService expects (connection_repo, location_repo) order
+    pathfinding_service = PathfindingService(connection_repo, location_repo)
+    
+    return RollCallGeneratorService(
+        location_repo=location_repo,
+        inmate_repo=inmate_repo,
+        schedule_repo=schedule_repo,
+        pathfinding_service=pathfinding_service,
+    )
+
+
+@router.post("/rollcalls/generate", response_model=GeneratedRollCallResponse)
+async def generate_rollcall(
+    request: GenerateRollCallRequest,
+    generator: RollCallGeneratorService = Depends(get_generator_service),
+):
+    """
+    Generate a schedule-aware roll call for one or more locations.
+
+    Takes one or more locations (cells, landings, wings, or houseblocks) and
+    generates an optimal walking route through all cells, with expected prisoner
+    counts based on the schedule at the specified time.
+
+    Supports flexible selection:
+    - Single location: ["houseblock-1"] - all cells in houseblock
+    - Multiple wings: ["a-wing", "b-wing"]
+    - Two landings: ["a1-landing", "a2-landing"]
+    - Specific cells: ["cell-101", "cell-205", "cell-310"]
+    - Mixed hierarchy: ["b-wing", "a1-landing", "cell-405"]
+
+    Args:
+        request: Generation parameters (location_ids, scheduled_at, etc.)
+
+    Returns:
+        GeneratedRollCallResponse: The generated roll call with route and summary
+
+    Raises:
+        HTTPException: 404 if location not found, 400 on other errors
+    """
+    try:
+        result = generator.generate_roll_call(
+            location_ids=request.location_ids,
+            scheduled_at=request.scheduled_at,
+            include_empty=request.include_empty,
+        )
+
+        # Convert to response model
+        route_stops = [
+            RouteStopResponse(
+                order=stop.order,
+                location_id=stop.location_id,
+                location_name=stop.location_name,
+                location_type=stop.location_type,
+                building=stop.building,
+                floor=stop.floor,
+                is_occupied=stop.is_occupied,
+                expected_count=stop.expected_count,
+                walking_distance_meters=stop.walking_distance_meters,
+                walking_time_seconds=stop.walking_time_seconds,
+            )
+            for stop in result.route
+        ]
+
+        return GeneratedRollCallResponse(
+            location_ids=result.location_ids,
+            location_names=result.location_names,
+            scheduled_at=result.scheduled_at,
+            route=route_stops,
+            summary={
+                "total_locations": result.total_locations,
+                "occupied_locations": result.occupied_locations,
+                "empty_locations": result.empty_locations,
+                "total_prisoners_expected": result.total_prisoners_expected,
+                "estimated_time_seconds": result.estimated_time_seconds,
+            },
+        )
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class ExpectedPrisonerResponse(BaseModel):
+    """A prisoner expected at a location."""
+    inmate_id: str
+    inmate_number: str
+    first_name: str
+    last_name: str
+    is_enrolled: bool
+    home_cell_id: str | None
+    is_at_home_cell: bool
+    current_activity: str
+    next_appointment: dict | None
+    priority_score: int
+
+
+class ExpectedPrisonersResponse(BaseModel):
+    """Response for expected prisoners at a location."""
+    location_id: str
+    expected_prisoners: list[ExpectedPrisonerResponse]
+    total_expected: int
+
+
+@router.get("/rollcalls/expected/{location_id}")
+async def get_expected_prisoners(
+    location_id: str,
+    at_time: datetime | None = None,
+    generator: RollCallGeneratorService = Depends(get_generator_service),
+):
+    """
+    Get prisoners expected at a location at a specific time.
+    
+    Returns prisoners sorted by priority (those with imminent appointments first).
+    
+    Args:
+        location_id: The location to check
+        at_time: Time to check (defaults to now)
+        
+    Returns:
+        ExpectedPrisonersResponse: List of expected prisoners with priority info
+    """
+    check_time = at_time or datetime.now()
+    
+    expected = generator.get_expected_prisoners(location_id, check_time)
+    
+    prisoners = [
+        ExpectedPrisonerResponse(
+            inmate_id=p.inmate.id,
+            inmate_number=p.inmate.inmate_number,
+            first_name=p.inmate.first_name,
+            last_name=p.inmate.last_name,
+            is_enrolled=p.inmate.is_enrolled,
+            home_cell_id=p.home_cell_id,
+            is_at_home_cell=p.is_at_home_cell,
+            current_activity=p.current_activity,
+            next_appointment={
+                "activity_type": p.next_appointment.activity_type,
+                "location_name": p.next_appointment.location_name,
+                "start_time": p.next_appointment.start_time,
+                "minutes_until": p.next_appointment.minutes_until,
+                "is_urgent": p.next_appointment.is_urgent,
+            } if p.next_appointment else None,
+            priority_score=p.priority_score,
+        )
+        for p in expected
+    ]
+    
+    return ExpectedPrisonersResponse(
+        location_id=location_id,
+        expected_prisoners=prisoners,
+        total_expected=len(prisoners),
+    )
