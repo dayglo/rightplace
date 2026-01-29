@@ -190,6 +190,26 @@
 - [x] 🧪 Audit logging tests created
 - [x] ✅ All tests pass
 
+#### 4.3 Audit Service Integration
+- [x] 📋 Integration strategy designed (middleware + endpoint integration)
+- [x] 🏗️ RequestContextMiddleware built (app/api/middleware/context.py)
+- [x] 🏗️ Audit logging integrated into 8 API endpoints
+- [x] 🏗️ Roll call endpoints: start, complete, cancel, verification (4 endpoints)
+- [x] 🏗️ Inmate endpoints: create, update, delete (3 endpoints)
+- [x] 🏗️ Enrollment endpoint: enroll face (1 endpoint)
+- [x] 🏗️ Audit service dependency injection added
+- [x] 🧪 Integration tests created (11 tests covering all audit scenarios)
+- [x] 🧪 Context capture tests (user ID, IP address, user agent)
+- [x] 🧪 Manual override detection tests
+- [x] ✅ All tests pass (11/11 integration tests + 35 existing endpoint tests)
+- [x] 🏗️ httpx version fixed (downgrade to 0.26.0 for compatibility)
+- [x] 🏗️ Demo scripts created (demo_audit_api.sh)
+- [x] 🏗️ Documentation complete (3 guides: summary, demo guide, quick start)
+
+**Implementation**: All security-sensitive API endpoints now automatically log actions with full context (who, what, when, where). Manual overrides are flagged separately. Audit trail is tamper-proof and exportable to CSV.
+
+**Actions Tracked**: INMATE_CREATED, INMATE_UPDATED, INMATE_DELETED, FACE_ENROLLED, ROLLCALL_STARTED, ROLLCALL_COMPLETED, ROLLCALL_CANCELLED, VERIFICATION_RECORDED, MANUAL_OVERRIDE_USED
+
 ---
 
 ### Phase 5: Regime/Schedule System
