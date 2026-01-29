@@ -97,6 +97,7 @@ def init_db(conn: sqlite3.Connection) -> None:
         "002_multiple_embeddings.sql",
         "003_location_connections.sql",
         "004_schedule_entries.sql",
+        "005_home_cell_id.sql",
     ]
     
     for migration_file in migrations:

@@ -293,6 +293,152 @@ class TestRollCallStatusTransitions:
         assert response.status_code == 400
 
 
+class TestGenerateRollCallEndpoint:
+    """Test roll call generation endpoint."""
+
+    def test_generate_rollcall_success(self, client):
+        """Should generate roll call for a location."""
+        # Create location hierarchy
+        houseblock_payload = {
+            "name": "Houseblock 1",
+            "type": "houseblock",
+            "building": "Block 1",
+        }
+        hb_response = client.post("/api/v1/locations", json=houseblock_payload)
+        houseblock_id = hb_response.json()["id"]
+        
+        wing_payload = {
+            "name": "A Wing",
+            "type": "wing",
+            "building": "Block 1",
+            "parent_id": houseblock_id,
+        }
+        wing_response = client.post("/api/v1/locations", json=wing_payload)
+        wing_id = wing_response.json()["id"]
+        
+        cell_payload = {
+            "name": "A1-01",
+            "type": "cell",
+            "building": "Block 1",
+            "parent_id": wing_id,
+        }
+        client.post("/api/v1/locations", json=cell_payload)
+        
+        # Generate roll call
+        generate_payload = {
+            "location_id": houseblock_id,
+            "scheduled_at": "2026-01-29T14:00:00",
+        }
+        response = client.post("/api/v1/rollcalls/generate", json=generate_payload)
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["location_id"] == houseblock_id
+        assert data["location_name"] == "Houseblock 1"
+        assert "route" in data
+        assert "summary" in data
+        assert data["summary"]["total_locations"] >= 1
+
+    def test_generate_rollcall_not_found(self, client):
+        """Should return 404 for non-existent location."""
+        generate_payload = {
+            "location_id": "non-existent-id",
+            "scheduled_at": "2026-01-29T14:00:00",
+        }
+        response = client.post("/api/v1/rollcalls/generate", json=generate_payload)
+        
+        assert response.status_code == 404
+
+    def test_generate_rollcall_includes_empty_by_default(self, client):
+        """Should include empty cells by default."""
+        # Create location hierarchy
+        houseblock_payload = {
+            "name": "Houseblock 2",
+            "type": "houseblock",
+            "building": "Block 2",
+        }
+        hb_response = client.post("/api/v1/locations", json=houseblock_payload)
+        houseblock_id = hb_response.json()["id"]
+        
+        # Create 2 cells
+        for i in range(2):
+            cell_payload = {
+                "name": f"B1-{i+1:02d}",
+                "type": "cell",
+                "building": "Block 2",
+                "parent_id": houseblock_id,
+            }
+            client.post("/api/v1/locations", json=cell_payload)
+        
+        generate_payload = {
+            "location_id": houseblock_id,
+            "scheduled_at": "2026-01-29T14:00:00",
+        }
+        response = client.post("/api/v1/rollcalls/generate", json=generate_payload)
+        
+        data = response.json()
+        # All cells should be in route even though empty
+        assert len(data["route"]) == 2
+        assert data["summary"]["empty_locations"] == 2
+
+
+class TestExpectedPrisonersEndpoint:
+    """Test expected prisoners endpoint."""
+
+    def test_get_expected_prisoners_empty_cell(self, client):
+        """Should return empty list for cell with no inmates."""
+        cell_payload = {
+            "name": "Empty Cell",
+            "type": "cell",
+            "building": "Block 1",
+        }
+        cell_response = client.post("/api/v1/locations", json=cell_payload)
+        cell_id = cell_response.json()["id"]
+        
+        response = client.get(f"/api/v1/rollcalls/expected/{cell_id}")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["location_id"] == cell_id
+        assert data["expected_prisoners"] == []
+        assert data["total_expected"] == 0
+
+    def test_get_expected_prisoners_with_inmate(self, client):
+        """Should return prisoners assigned to cell."""
+        # Create cell
+        cell_payload = {
+            "name": "Occupied Cell",
+            "type": "cell",
+            "building": "Block 1",
+        }
+        cell_response = client.post("/api/v1/locations", json=cell_payload)
+        cell_id = cell_response.json()["id"]
+        
+        # Create inmate
+        inmate_payload = {
+            "inmate_number": "Z001",
+            "first_name": "Test",
+            "last_name": "Prisoner",
+            "date_of_birth": "1985-06-15",
+            "cell_block": "Z",
+            "cell_number": "001",
+        }
+        inmate_response = client.post("/api/v1/inmates", json=inmate_payload)
+        inmate_id = inmate_response.json()["id"]
+        
+        # Assign to cell via update
+        client.put(f"/api/v1/inmates/{inmate_id}", json={
+            "home_cell_id": cell_id,
+        })
+        
+        response = client.get(f"/api/v1/rollcalls/expected/{cell_id}")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_expected"] == 1
+        assert data["expected_prisoners"][0]["inmate_id"] == inmate_id
+
+
 class TestVerificationRecording:
     """Test verification recording endpoint."""
 

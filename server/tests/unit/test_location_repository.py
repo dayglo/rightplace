@@ -271,3 +271,156 @@ class TestLocationRepositoryDelete:
         """Should return False when deleting non-existent location."""
         result = location_repo.delete("non-existent-id")
         assert result is False
+
+
+class TestLocationRepositoryGetAllDescendants:
+    """Test get_all_descendants for location hierarchy traversal."""
+
+    def test_get_all_descendants_simple_hierarchy(self, location_repo):
+        """Should return all child locations recursively."""
+        # Create: Houseblock -> Wing -> Landing -> Cells
+        houseblock = location_repo.create(LocationCreate(
+            name="Houseblock 1",
+            type=LocationType.HOUSEBLOCK,
+            building="Main",
+        ))
+        wing = location_repo.create(LocationCreate(
+            name="A Wing",
+            type=LocationType.WING,
+            building="Main",
+            parent_id=houseblock.id,
+        ))
+        landing = location_repo.create(LocationCreate(
+            name="1s",
+            type=LocationType.LANDING,
+            building="Main",
+            parent_id=wing.id,
+        ))
+        cell1 = location_repo.create(LocationCreate(
+            name="A1-01",
+            type=LocationType.CELL,
+            building="Main",
+            parent_id=landing.id,
+        ))
+        cell2 = location_repo.create(LocationCreate(
+            name="A1-02",
+            type=LocationType.CELL,
+            building="Main",
+            parent_id=landing.id,
+        ))
+
+        descendants = location_repo.get_all_descendants(houseblock.id)
+
+        # Should include wing, landing, and 2 cells
+        assert len(descendants) == 4
+        descendant_ids = {d.id for d in descendants}
+        assert wing.id in descendant_ids
+        assert landing.id in descendant_ids
+        assert cell1.id in descendant_ids
+        assert cell2.id in descendant_ids
+
+    def test_get_all_descendants_with_type_filter(self, location_repo):
+        """Should only return descendants of specified type."""
+        # Create: Houseblock -> Wing -> Landing -> Cells
+        houseblock = location_repo.create(LocationCreate(
+            name="Houseblock 1",
+            type=LocationType.HOUSEBLOCK,
+            building="Main",
+        ))
+        wing = location_repo.create(LocationCreate(
+            name="A Wing",
+            type=LocationType.WING,
+            building="Main",
+            parent_id=houseblock.id,
+        ))
+        landing = location_repo.create(LocationCreate(
+            name="1s",
+            type=LocationType.LANDING,
+            building="Main",
+            parent_id=wing.id,
+        ))
+        cell1 = location_repo.create(LocationCreate(
+            name="A1-01",
+            type=LocationType.CELL,
+            building="Main",
+            parent_id=landing.id,
+        ))
+        cell2 = location_repo.create(LocationCreate(
+            name="A1-02",
+            type=LocationType.CELL,
+            building="Main",
+            parent_id=landing.id,
+        ))
+
+        # Only get cells
+        cells = location_repo.get_all_descendants(
+            houseblock.id, type_filter=LocationType.CELL
+        )
+
+        assert len(cells) == 2
+        assert all(c.type == LocationType.CELL for c in cells)
+
+    def test_get_all_descendants_no_children(self, location_repo):
+        """Should return empty list when location has no children."""
+        cell = location_repo.create(LocationCreate(
+            name="Isolated Cell",
+            type=LocationType.CELL,
+            building="Main",
+        ))
+
+        descendants = location_repo.get_all_descendants(cell.id)
+
+        assert descendants == []
+
+    def test_get_all_descendants_multiple_wings(self, location_repo):
+        """Should return cells from all wings under a houseblock."""
+        houseblock = location_repo.create(LocationCreate(
+            name="Houseblock 1",
+            type=LocationType.HOUSEBLOCK,
+            building="Main",
+        ))
+        
+        # Wing A with 2 cells
+        wing_a = location_repo.create(LocationCreate(
+            name="A Wing",
+            type=LocationType.WING,
+            building="Main",
+            parent_id=houseblock.id,
+        ))
+        location_repo.create(LocationCreate(
+            name="A1-01",
+            type=LocationType.CELL,
+            building="Main",
+            parent_id=wing_a.id,
+        ))
+        location_repo.create(LocationCreate(
+            name="A1-02",
+            type=LocationType.CELL,
+            building="Main",
+            parent_id=wing_a.id,
+        ))
+        
+        # Wing B with 1 cell
+        wing_b = location_repo.create(LocationCreate(
+            name="B Wing",
+            type=LocationType.WING,
+            building="Main",
+            parent_id=houseblock.id,
+        ))
+        location_repo.create(LocationCreate(
+            name="B1-01",
+            type=LocationType.CELL,
+            building="Main",
+            parent_id=wing_b.id,
+        ))
+
+        cells = location_repo.get_all_descendants(
+            houseblock.id, type_filter=LocationType.CELL
+        )
+
+        assert len(cells) == 3
+
+    def test_get_all_descendants_nonexistent_parent(self, location_repo):
+        """Should return empty list for non-existent parent."""
+        descendants = location_repo.get_all_descendants("non-existent-id")
+        assert descendants == []

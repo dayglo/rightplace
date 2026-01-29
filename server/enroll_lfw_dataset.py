@@ -234,7 +234,7 @@ def main():
         log("ERROR: FastAPI server is not running!", "ERROR")
         log("Please start the server first:")
         log("  cd server")
-        log("  source venv/bin/activate")
+        log("  source .venv/bin/activate")
         log("  uvicorn app.main:app --host 0.0.0.0 --port 8000")
         sys.exit(1)
     

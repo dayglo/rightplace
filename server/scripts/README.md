@@ -23,7 +23,7 @@ This directory contains demonstration scripts that showcase the Prison Roll Call
 ```bash
 # Basic usage (RetinaFace backend)
 cd server
-source venv/bin/activate
+source .venv/bin/activate
 python scripts/demo_face_detection.py
 
 # Try different backends
@@ -209,7 +209,7 @@ This diversity ensures the system works equally well across different demographi
 ```bash
 # Terminal 1: Run the demo
 cd server
-source venv/bin/activate
+source .venv/bin/activate
 python scripts/demo_face_detection.py
 
 # Terminal 2: Watch output directory populate

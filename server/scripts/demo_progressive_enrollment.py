@@ -13,7 +13,7 @@ This script:
 
 Usage:
     cd server
-    source venv/bin/activate
+    source .venv/bin/activate
     python scripts/demo_progressive_enrollment.py
 """
 

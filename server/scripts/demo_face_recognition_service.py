@@ -13,7 +13,7 @@ This script:
 
 Usage:
     cd server
-    source venv/bin/activate
+    source .venv/bin/activate
     python scripts/demo_face_recognition_service.py
     
     Then open demo_output/index.html in your browser!

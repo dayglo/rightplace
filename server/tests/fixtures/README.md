@@ -163,7 +163,7 @@ If you need to regenerate the fixtures (e.g., after dataset updates):
 
 ```bash
 cd server
-source venv/bin/activate  # Activate virtual environment
+source .venv/bin/activate  # Activate virtual environment
 python3 tests/fixtures/prepare_lfw_fixtures.py
 ```
 

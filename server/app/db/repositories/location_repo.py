@@ -141,6 +141,53 @@ class LocationRepository:
 
         return [self._row_to_location(row) for row in rows]
 
+    def get_all_descendants(
+        self, parent_id: str, type_filter: Optional[LocationType] = None
+    ) -> list[Location]:
+        """
+        Retrieve all descendant locations recursively.
+
+        Uses recursive CTE to get full tree under a parent location.
+
+        Args:
+            parent_id: Parent location ID
+            type_filter: Optional filter to only return locations of this type
+
+        Returns:
+            List of all descendant locations
+        """
+        # SQLite recursive CTE to get all descendants
+        cursor = self.conn.execute(
+            """
+            WITH RECURSIVE location_tree AS (
+                -- Base case: direct children
+                SELECT id, name, type, parent_id, capacity, floor, building, 1 as depth
+                FROM locations
+                WHERE parent_id = ?
+                
+                UNION ALL
+                
+                -- Recursive case: children of children
+                SELECT l.id, l.name, l.type, l.parent_id, l.capacity, l.floor, l.building, lt.depth + 1
+                FROM locations l
+                JOIN location_tree lt ON l.parent_id = lt.id
+            )
+            SELECT id, name, type, parent_id, capacity, floor, building
+            FROM location_tree
+            ORDER BY depth, name
+            """,
+            (parent_id,),
+        )
+        rows = cursor.fetchall()
+        
+        locations = [self._row_to_location(row) for row in rows]
+        
+        # Apply type filter if specified
+        if type_filter:
+            locations = [loc for loc in locations if loc.type == type_filter]
+        
+        return locations
+
     def update(
         self, location_id: str, location_data: LocationUpdate
     ) -> Optional[Location]:

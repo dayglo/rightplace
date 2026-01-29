@@ -60,23 +60,45 @@ def seed_hmp_oakwood():
         
         all_locations = {}
         
+        # ===== 3 HOUSEBLOCKS =====
+        # HMP Oakwood has 3 residential blocks
+        print("\n📍 Creating 3 houseblocks (residential blocks)...")
+        
+        houseblocks = {}
+        houseblock_configs = [
+            ("Houseblock 1", 900, "Block 1", 0, 0),    # Contains A & B Wings
+            ("Houseblock 2", 600, "Block 2", 300, 0),  # Contains C & D Wings
+            ("Houseblock 3", 150, "Block 3", 600, 0),  # Contains E Wing
+        ]
+        
+        for hb_name, hb_capacity, building, x, y in houseblock_configs:
+            hb_id = create_location(conn, hb_name, "houseblock", 
+                                   capacity=hb_capacity, building=building,
+                                   x=x, y=y)
+            houseblocks[building] = hb_id
+            all_locations[hb_name] = hb_id
+            print(f"  ✅ Created {hb_name} (capacity: {hb_capacity})")
+        
         # ===== 5 OPERATIONAL WINGS =====
         # 3 large wings (400+ prisoners each) + 2 smaller wings
-        print("\n📍 Creating 5 operational wings...")
+        print("\n📍 Creating 5 operational wings inside houseblocks...")
         
         wings = []
         wing_configs = [
-            ("A Wing", 450, "Block 1"),  # Large wing
-            ("B Wing", 450, "Block 1"),  # Large wing  
-            ("C Wing", 450, "Block 2"),  # Large wing
-            ("D Wing", 150, "Block 2"),  # Smaller wing
-            ("E Wing", 150, "Block 3"),  # Smaller wing
+            ("A Wing", 450, "Block 1"),  # Large wing in Houseblock 1
+            ("B Wing", 450, "Block 1"),  # Large wing in Houseblock 1
+            ("C Wing", 450, "Block 2"),  # Large wing in Houseblock 2
+            ("D Wing", 150, "Block 2"),  # Smaller wing in Houseblock 2
+            ("E Wing", 150, "Block 3"),  # Smaller wing in Houseblock 3
         ]
         
         for idx, (wing_name, wing_capacity, building) in enumerate(wing_configs):
+            # Wings are children of their houseblock
+            parent_houseblock_id = houseblocks[building]
             wing_id = create_location(conn, wing_name, "wing", 
+                                     parent_id=parent_houseblock_id,
                                      capacity=wing_capacity, building=building, 
-                                     x=idx*150, y=0)
+                                     x=idx*150, y=50)
             wings.append(wing_id)
             all_locations[wing_name] = wing_id
             print(f"  ✅ Created {wing_name} (capacity: {wing_capacity}, {building})")
