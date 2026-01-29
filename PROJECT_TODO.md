@@ -207,10 +207,10 @@
 - [x] ✅ All tests pass
 
 #### 5.3 Schedule Service
-- [ ] 📋 ScheduleService designed
-- [ ] 🏗️ ScheduleService built (app/services/schedule_service.py)
-- [ ] 🧪 Service tests created (business logic, conflict detection)
-- [ ] ✅ All tests pass
+- [x] 📋 ScheduleService designed
+- [x] 🏗️ ScheduleService built (app/services/schedule_service.py)
+- [x] 🧪 Service tests created (business logic, conflict detection)
+- [x] ✅ All tests pass
 
 #### 5.4 Schedule API Endpoints
 - [ ] 📋 Schedule CRUD APIs designed
