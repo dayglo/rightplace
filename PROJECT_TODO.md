@@ -254,10 +254,10 @@
 - [x] ✅ All tests pass
 
 #### 2.2 Prisoner List Page
-- [ ] 📋 Design Complete
-- [ ] 🏗️ Prisoner list page built (src/routes/prisoners/+page.svelte)
-- [ ] 🧪 Tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Design Complete
+- [x] 🏗️ Prisoner list page built (src/routes/prisoners/+page.svelte)
+- [x] 🧪 Tests created
+- [x] ✅ All tests pass
 
 #### 2.3 Add Prisoner Page
 - [ ] 📋 Design Complete
