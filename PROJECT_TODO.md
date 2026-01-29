@@ -185,20 +185,20 @@
 **Implementation**: Sync endpoint processes queued verifications using real face recognition service. Successfully identifies inmates from photos and creates verification records.
 
 #### 4.2 Audit Service
-- [ ] 📋 Audit logging designed
-- [ ] 🏗️ AuditService built (app/services/audit_service.py)
-- [ ] 🧪 Audit logging tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Audit logging designed
+- [x] 🏗️ AuditService built (app/services/audit_service.py)
+- [x] 🧪 Audit logging tests created
+- [x] ✅ All tests pass
 
 ---
 
 ### Phase 5: Regime/Schedule System
 
 #### 5.1 Schedule Data Model
-- [ ] 📋 Schedule models designed (ActivityType, ScheduleEntry)
-- [ ] 🏗️ Migration 004 created (schedule_entries table)
-- [ ] 🧪 Model validation tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Schedule models designed (ActivityType, ScheduleEntry)
+- [x] 🏗️ Migration 004 created (schedule_entries table)
+- [x] 🧪 Model validation tests created
+- [x] ✅ All tests pass
 
 #### 5.2 Schedule Repository
 - [ ] 📋 ScheduleRepository interface designed
@@ -266,8 +266,8 @@
 #### 5.4 Deployment Scripts
 - [ ] 📋 Deployment process designed
 - [ ] 🏗️ setup_hotspot.sh built
-- [ ] 🏗️ seed_data.py built
-- [ ] 🏗️ export_audit.py built
+- [x] 🏗️ seed_data.py built (seed_hmp_oakwood.py)
+- [x] 🏗️ export_audit.py built
 - [ ] 🧪 Deployment script tests created
 - [ ] ✅ All tests pass
 
