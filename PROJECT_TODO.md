@@ -260,10 +260,10 @@
 - [x] ✅ All tests pass
 
 #### 2.3 Add Prisoner Page
-- [ ] 📋 Design Complete
-- [ ] 🏗️ Add prisoner page built (src/routes/prisoners/new/+page.svelte)
-- [ ] 🧪 Form validation tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Design Complete
+- [x] 🏗️ Add prisoner page built (src/routes/prisoners/new/+page.svelte)
+- [x] 🧪 Form validation tests created
+- [x] ✅ All tests pass
 
 #### 2.4 Face Enrollment Page
 - [ ] 📋 Design Complete
