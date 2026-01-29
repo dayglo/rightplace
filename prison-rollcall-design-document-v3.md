@@ -375,7 +375,8 @@ Auth: X-API-Key header
 | PUT | `/schedules/{id}` | Update schedule entry |
 | DELETE | `/schedules/{id}` | Delete schedule entry |
 | POST | `/schedules/sync` | Bulk import from external system |
-| POST | `/rollcalls/generate` | Auto-generate from schedules |
+| POST | `/rollcalls/generate` | Auto-generate from schedules (multi-location) |
+| GET | `/rollcalls/expected/{id}` | Get expected prisoners at location |
 
 ---
 
@@ -608,6 +609,156 @@ Response 200:
   ]
 }
 ```
+
+### Auto-Generate Roll Call
+
+```
+POST /rollcalls/generate
+
+Body:
+{
+  "location_ids": ["loc123", "loc456"],  // One or more location IDs
+  "scheduled_at": "2025-01-05T14:00:00Z",
+  "include_empty": true,                 // Include empty cells in route
+  "name": "Morning Roll Call A Wing",    // Optional
+  "officer_id": "officer-001"            // Officer conducting roll call
+}
+
+Response 200:
+{
+  "location_ids": ["loc123", "loc456"],
+  "location_names": ["A Wing", "B Wing"],
+  "scheduled_at": "2025-01-05T14:00:00Z",
+  "route": [
+    {
+      "order": 0,
+      "location_id": "cell001",
+      "location_name": "A1-01",
+      "location_type": "cell",
+      "building": "Block 1",
+      "floor": 0,
+      "is_occupied": true,
+      "expected_count": 2,
+      "walking_distance_meters": 0,
+      "walking_time_seconds": 0
+    },
+    {
+      "order": 1,
+      "location_id": "cell002",
+      "location_name": "A1-02",
+      "location_type": "cell",
+      "building": "Block 1",
+      "floor": 0,
+      "is_occupied": true,
+      "expected_count": 1,
+      "walking_distance_meters": 5,
+      "walking_time_seconds": 8
+    }
+  ],
+  "summary": {
+    "total_locations": 47,
+    "occupied_locations": 42,
+    "empty_locations": 5,
+    "total_prisoners_expected": 78,
+    "estimated_time_seconds": 2940  // Walking + 30s per prisoner
+  }
+}
+
+Response 400 (empty list):
+{
+  "detail": "At least one location ID required"
+}
+
+Response 404 (invalid location):
+{
+  "detail": "Location abc123 not found"
+}
+
+Response 400 (no cells):
+{
+  "detail": "No cells found in specified locations"
+}
+```
+
+**Multi-Location Support:**
+
+The endpoint accepts multiple location IDs for flexible roll call generation:
+
+- **Single location**: `["houseblock-1"]` - all cells in houseblock
+- **Multiple wings**: `["a-wing", "b-wing"]` - combine two wings
+- **Two landings**: `["a1-landing", "a2-landing"]` - just specific landings
+- **Specific cells**: `["cell-101", "cell-205", "cell-310"]` - arbitrary selection
+- **Mixed hierarchy**: `["b-wing", "a1-landing", "cell-405"]` - combine levels
+
+The service automatically:
+- Collects all cells from parent locations (wings, landings, houseblocks)
+- Adds individual cells directly
+- Deduplicates overlapping selections (e.g., wing + one of its cells)
+- Calculates optimal route through all cells
+- Counts expected prisoners based on schedules at the specified time
+
+### Expected Prisoners at Location
+
+```
+GET /rollcalls/expected/{location_id}?at_time=2025-01-05T14:00:00Z
+
+Response 200:
+{
+  "location_id": "cell001",
+  "total_expected": 2,
+  "expected_prisoners": [
+    {
+      "inmate_id": "inmate123",
+      "inmate_number": "A12345",
+      "first_name": "John",
+      "last_name": "Doe",
+      "is_enrolled": true,
+      "home_cell_id": "cell001",
+      "is_at_home_cell": true,
+      "current_activity": "lock_up",
+      "next_appointment": {
+        "activity_type": "healthcare",
+        "location_name": "Healthcare Unit",
+        "start_time": "14:30",
+        "minutes_until": 30,
+        "is_urgent": false
+      },
+      "priority_score": 70
+    },
+    {
+      "inmate_id": "inmate456",
+      "inmate_number": "A12346",
+      "first_name": "Jane",
+      "last_name": "Smith",
+      "is_enrolled": true,
+      "home_cell_id": "cell001",
+      "is_at_home_cell": true,
+      "current_activity": "lock_up",
+      "next_appointment": {
+        "activity_type": "visits",
+        "location_name": "Visits Hall",
+        "start_time": "14:10",
+        "minutes_until": 10,
+        "is_urgent": true
+      },
+      "priority_score": 105  // Higher priority - verify first
+    }
+  ]
+}
+```
+
+**Priority Scoring:**
+
+Prisoners are sorted by priority score (highest first):
+- Base score: 50
+- +50 if appointment < 15 minutes
+- +40 if appointment < 30 minutes
+- +20 if appointment < 60 minutes
+- +10 for healthcare appointments
+- +5 for visits (family)
+- Maximum score: 100
+
+This allows officers to prioritize verifying prisoners with imminent appointments first.
 
 ---
 

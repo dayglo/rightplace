@@ -219,10 +219,19 @@
 - [ ] ✅ All tests pass
 
 #### 5.5 Roll Call Generation from Schedules
-- [ ] 📋 Auto-generation logic designed
-- [ ] 🏗️ POST /rollcalls/generate endpoint built
-- [ ] 🧪 Generation tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Auto-generation logic designed (multi-location support)
+- [x] 🏗️ RollCallGeneratorService built (app/services/rollcall_generator_service.py)
+- [x] 🏗️ POST /rollcalls/generate endpoint built (supports location_ids list)
+- [x] 🧪 Generation tests created (19 comprehensive tests)
+- [x] ✅ All tests pass
+
+**Features Implemented:**
+- Multi-location support (wings, landings, individual cells)
+- Deduplication for overlapping hierarchies
+- Schedule-aware prisoner counting
+- Optimal route calculation via PathfindingService
+- Priority scoring for prisoners with imminent appointments
+- Expected prisoner lookup endpoint (GET /rollcalls/expected/{location_id})
 
 #### 5.6 Demo Data Generator
 - [ ] 📋 Schedule generation strategy designed (2 weeks, realistic patterns)
