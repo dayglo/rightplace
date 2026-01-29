@@ -201,10 +201,10 @@
 - [x] ✅ All tests pass
 
 #### 5.2 Schedule Repository
-- [ ] 📋 ScheduleRepository interface designed
-- [ ] 🏗️ ScheduleRepository built (app/db/repositories/schedule_repo.py)
-- [ ] 🧪 Repository tests created (CRUD, queries)
-- [ ] ✅ All tests pass
+- [x] 📋 ScheduleRepository interface designed
+- [x] 🏗️ ScheduleRepository built (app/db/repositories/schedule_repo.py)
+- [x] 🧪 Repository tests created (CRUD, queries)
+- [x] ✅ All tests pass
 
 #### 5.3 Schedule Service
 - [ ] 📋 ScheduleService designed
