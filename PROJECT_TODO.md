@@ -266,20 +266,20 @@
 - [x] ✅ All tests pass
 
 #### 2.4 Face Enrollment Page
-- [ ] 📋 Design Complete
-- [ ] 🏗️ Enrollment page built (src/routes/prisoners/[id]/enroll/+page.svelte)
-- [ ] 🧪 Camera + enrollment tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Design Complete
+- [x] 🏗️ Enrollment page built (src/routes/prisoners/[id]/enroll/+page.svelte)
+- [x] 🧪 Camera + enrollment tests created
+- [x] ✅ All tests pass
 
 ---
 
 ### Phase 3: Locations & Roll Calls
 
 #### 3.1 Location List Page
-- [ ] 📋 Design Complete
-- [ ] 🏗️ Location list page built (src/routes/locations/+page.svelte)
-- [ ] 🧪 Tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Design Complete
+- [x] 🏗️ Location list page built (src/routes/locations/+page.svelte)
+- [x] 🧪 Tests created
+- [x] ✅ All tests pass
 
 #### 3.2 Add Location Page
 - [ ] 📋 Design Complete
