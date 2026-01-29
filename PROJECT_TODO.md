@@ -282,10 +282,10 @@
 - [x] ✅ All tests pass
 
 #### 3.2 Add Location Page
-- [ ] 📋 Design Complete
-- [ ] 🏗️ Add location page built (src/routes/locations/new/+page.svelte)
-- [ ] 🧪 Tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Design Complete
+- [x] 🏗️ Add location page built (src/routes/locations/new/+page.svelte)
+- [x] 🧪 Tests created
+- [x] ✅ All tests pass
 
 #### 3.3 Roll Call List Page
 - [ ] 📋 Design Complete
