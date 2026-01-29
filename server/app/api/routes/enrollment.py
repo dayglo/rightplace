@@ -7,9 +7,11 @@ import logging
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 
-from app.dependencies import get_face_recognition_service
+from app.dependencies import get_face_recognition_service, get_audit_service
+from app.services.audit_service import AuditService
+from app.models.audit import AuditAction
 from app.models.face import (
     EnrollmentSuccessResponse,
     EnrollmentErrorResponse,
@@ -29,25 +31,29 @@ MAX_FILE_SIZE = 2 * 1024 * 1024
 async def enroll_inmate(
     inmate_id: str,
     image: UploadFile = File(...),
+    request: Request = None,
     service: FaceRecognitionService = Depends(get_face_recognition_service),
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """
     Enroll an inmate's face for recognition.
-    
+
     This endpoint accepts an image file and enrolls the inmate's face
     by extracting and storing their face embedding. The image must meet
     quality requirements to be accepted.
-    
+
     Args:
         inmate_id: Inmate ID to enroll
         image: Uploaded image file (JPEG, PNG)
+        request: FastAPI request for user context
         service: Face recognition service instance
-        
+        audit_service: Audit service for logging
+
     Returns:
         EnrollmentSuccessResponse: Enrollment succeeded (200)
         EnrollmentErrorResponse: Quality/detection issues (400)
         InmateNotFoundResponse: Inmate not found (404)
-        
+
     Raises:
         HTTPException: 400 if file is not an image or too large
     """
@@ -97,10 +103,25 @@ async def enroll_inmate(
             logger.info(
                 f"Successfully enrolled inmate {inmate_id} with quality {result.quality:.2f}"
             )
-            
+
             # Get embedder model version
             model_version = service.embedder.model
-            
+
+            # Log the action
+            audit_service.log_action(
+                user_id=request.state.user_id if request else "unknown",
+                action=AuditAction.FACE_ENROLLED,
+                entity_type="inmate",
+                entity_id=inmate_id,
+                details={
+                    "quality": result.quality,
+                    "model_version": model_version,
+                    "file_size_bytes": file_size,
+                },
+                ip_address=request.state.client_ip if request else "unknown",
+                user_agent=request.state.user_agent if request else "",
+            )
+
             return EnrollmentSuccessResponse(
                 success=True,
                 inmate_id=inmate_id,

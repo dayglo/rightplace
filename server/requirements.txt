@@ -3,6 +3,7 @@
 
 # Web Framework
 fastapi==0.109.0
+starlette==0.35.1
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
 
@@ -25,7 +26,7 @@ tensorflow>=2.20.0  # CPU version (GPU support requires separate CUDA setup)
 pytest==8.0.0
 pytest-asyncio==0.23.3
 pytest-cov==4.1.0
-httpx>=0.26.0
+httpx==0.26.0
 
 # Development Tools
 black==24.1.1

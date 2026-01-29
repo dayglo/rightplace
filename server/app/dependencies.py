@@ -9,11 +9,13 @@ from fastapi import Depends
 
 from app.config import Settings
 from app.db.database import get_db
+from app.db.repositories.audit_repo import AuditRepository
 from app.db.repositories.embedding_repo import EmbeddingRepository
 from app.db.repositories.inmate_repo import InmateRepository
 from app.ml.face_detector import FaceDetector
 from app.ml.face_embedder import FaceEmbedder
 from app.ml.face_matcher import FaceMatcher
+from app.services.audit_service import AuditService
 from app.services.face_recognition import FaceRecognitionService
 
 
@@ -83,3 +85,17 @@ def get_face_recognition_service(
         embedding_repo=embedding_repo,
         policy=settings.policy,
     )
+
+
+def get_audit_service(db=Depends(get_db)) -> AuditService:
+    """
+    Get AuditService instance.
+
+    Args:
+        db: Database connection from FastAPI dependency
+
+    Returns:
+        AuditService instance
+    """
+    audit_repo = AuditRepository(db)
+    return AuditService(audit_repo)

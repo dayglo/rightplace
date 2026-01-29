@@ -56,14 +56,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
+    # Request context middleware for audit logging
+    from app.api.middleware.context import RequestContextMiddleware
+    app.add_middleware(RequestContextMiddleware)
+
     # Register routes
-    from app.api.routes import enrollment, health, inmates, locations, rollcalls, schedules, sync, verification
+    from app.api.routes import enrollment, health, inmates, locations, rollcalls, schedules, sync, verification, verifications
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
     app.include_router(inmates.router, prefix="/api/v1", tags=["inmates"])
     app.include_router(locations.router, prefix="/api/v1", tags=["locations"])
     app.include_router(enrollment.router, prefix="/api/v1", tags=["enrollment"])
     app.include_router(verification.router, prefix="/api/v1", tags=["verification"])
+    app.include_router(verifications.router, prefix="/api/v1", tags=["verifications"])
     app.include_router(rollcalls.router, prefix="/api/v1", tags=["rollcalls"])
     app.include_router(schedules.router, prefix="/api/v1", tags=["schedules"])
     app.include_router(sync.router, prefix="/api/v1", tags=["sync"])
