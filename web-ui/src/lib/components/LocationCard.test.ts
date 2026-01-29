@@ -7,7 +7,7 @@ describe('LocationCard', () => {
 	const mockLocation: Location = {
 		id: '1',
 		name: 'Block A',
-		location_type: 'block',
+		type: 'block',
 		building: 'Main',
 		floor: 1,
 		capacity: 50,
@@ -48,7 +48,7 @@ describe('LocationCard', () => {
 		const cellLocation: Location = {
 			...mockLocation,
 			name: 'Cell A-101',
-			location_type: 'cell',
+			type: 'cell',
 			capacity: 1
 		};
 		render(LocationCard, { props: { location: cellLocation } });
@@ -59,7 +59,7 @@ describe('LocationCard', () => {
 		const yardLocation: Location = {
 			...mockLocation,
 			name: 'Yard',
-			location_type: 'yard',
+			type: 'yard',
 			building: 'Outdoor',
 			floor: 0,
 			capacity: 100
@@ -72,8 +72,8 @@ describe('LocationCard', () => {
 		const childLocation: Location = {
 			...mockLocation,
 			name: 'Cell A-101',
-			location_type: 'cell',
-			parent_location_id: 'parent-1'
+			type: 'cell',
+			parent_id: 'parent-1'
 		};
 		render(LocationCard, { props: { location: childLocation, parentName: 'Block A' } });
 		expect(screen.getByText(/Parent: Block A/i)).toBeInTheDocument();

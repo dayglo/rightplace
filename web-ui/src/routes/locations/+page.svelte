@@ -24,7 +24,7 @@
 
 		// Filter by type
 		if (filterType !== 'all') {
-			result = result.filter((loc) => loc.location_type === filterType);
+			result = result.filter((loc) => loc.type === filterType);
 		}
 
 		// Filter by building
@@ -85,9 +85,29 @@
 					class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				>
 					<option value="all">All Types</option>
-					<option value="block">Blocks</option>
-					<option value="cell">Cells</option>
-					<option value="yard">Yards</option>
+					<optgroup label="Accommodation">
+						<option value="houseblock">Houseblocks</option>
+						<option value="wing">Wings</option>
+						<option value="landing">Landings</option>
+						<option value="cell">Cells</option>
+					</optgroup>
+					<optgroup label="Special Units">
+						<option value="healthcare">Healthcare</option>
+						<option value="segregation">Segregation</option>
+						<option value="vpu">VPU</option>
+						<option value="induction">Induction</option>
+					</optgroup>
+					<optgroup label="Facilities">
+						<option value="education">Education</option>
+						<option value="workshop">Workshops</option>
+						<option value="gym">Gym</option>
+						<option value="chapel">Chapel</option>
+						<option value="visits">Visits</option>
+						<option value="reception">Reception</option>
+						<option value="kitchen">Kitchen</option>
+						<option value="yard">Yards</option>
+						<option value="admin">Admin</option>
+					</optgroup>
 				</select>
 
 				<select
@@ -117,7 +137,7 @@
 				{#each filteredLocations() as location (location.id)}
 					<LocationCard
 						{location}
-						parentName={getParentName(location.parent_location_id)}
+						parentName={getParentName(location.parent_id)}
 						onEdit={() => handleEdit(location.id)}
 						onDelete={() => handleDelete(location.id)}
 					/>

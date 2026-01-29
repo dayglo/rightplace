@@ -12,7 +12,25 @@
 	let errorMessage = $state('');
 	let availableLocations = $state<Location[]>([]);
 
-	const locationTypes = ['block', 'cell', 'yard'];
+	const locationTypes = [
+		'houseblock',
+		'wing',
+		'landing',
+		'cell',
+		'healthcare',
+		'segregation',
+		'vpu',
+		'induction',
+		'education',
+		'workshop',
+		'gym',
+		'chapel',
+		'visits',
+		'reception',
+		'kitchen',
+		'yard',
+		'admin'
+	];
 
 	// Load available locations for parent dropdown
 	onMount(async () => {
@@ -31,11 +49,11 @@
 		try {
 			await createLocation({
 				name,
-				location_type: locationType,
+				type: locationType,
 				building,
 				floor,
 				capacity,
-				parent_location_id: parentLocationId || undefined
+				parent_id: parentLocationId || undefined
 			});
 
 			// Redirect to locations list

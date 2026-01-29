@@ -365,6 +365,17 @@ Auth: X-API-Key header
 | POST | `/rollcalls/{id}/verification` | Record verification |
 | **Sync** | | |
 | POST | `/sync/queue` | Upload queued verifications |
+| **Schedules** | | |
+| GET | `/schedules` | List schedule entries (paginated) |
+| GET | `/schedules/inmate/{id}` | Get prisoner's schedule |
+| GET | `/schedules/location/{id}` | Who's scheduled at location |
+| GET | `/schedules/now` | Current expected locations |
+| GET | `/schedules/at` | Expected locations at time |
+| POST | `/schedules` | Create schedule entry |
+| PUT | `/schedules/{id}` | Update schedule entry |
+| DELETE | `/schedules/{id}` | Delete schedule entry |
+| POST | `/schedules/sync` | Bulk import from external system |
+| POST | `/rollcalls/generate` | Auto-generate from schedules |
 
 ---
 
@@ -723,6 +734,60 @@ class Verification(BaseModel):
     notes: str = ""
 ```
 
+#### Schedule
+
+```python
+class ActivityType(str, Enum):
+    """Types of scheduled activities."""
+    ROLL_CHECK = "roll_check"
+    LOCK_UP = "lock_up"
+    UNLOCK = "unlock"
+    MEAL = "meal"
+    WORK = "work"
+    EDUCATION = "education"
+    EXERCISE = "exercise"
+    ASSOCIATION = "association"
+    GYM = "gym"
+    VISITS = "visits"
+    HEALTHCARE = "healthcare"
+    CHAPEL = "chapel"
+    PROGRAMMES = "programmes"
+
+class ScheduleEntry(BaseModel):
+    """A scheduled activity for an inmate."""
+    id: str
+    inmate_id: str
+    location_id: str
+    day_of_week: int  # 0=Monday, 6=Sunday
+    start_time: str  # "HH:MM"
+    end_time: str  # "HH:MM"
+    activity_type: ActivityType
+    is_recurring: bool = True
+    effective_date: date | None = None  # For one-off appointments
+    source: str = "manual"  # "manual", "sync", "generated"
+    source_id: str | None = None  # External system ID
+    created_at: datetime
+    updated_at: datetime
+
+class ScheduleEntryCreate(BaseModel):
+    """Data for creating a schedule entry."""
+    inmate_id: str
+    location_id: str
+    day_of_week: int
+    start_time: str
+    end_time: str
+    activity_type: ActivityType
+    is_recurring: bool = True
+    effective_date: date | None = None
+
+class ScheduleEntryUpdate(BaseModel):
+    """Data for updating a schedule entry."""
+    location_id: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    activity_type: ActivityType | None = None
+```
+
 #### Face Recognition
 
 ```python
@@ -930,6 +995,28 @@ CREATE TABLE policy (
     updated_at TEXT NOT NULL,
     updated_by TEXT NOT NULL
 );
+
+-- Schedule entries (prisoner timetables)
+CREATE TABLE schedule_entries (
+    id TEXT PRIMARY KEY,
+    inmate_id TEXT NOT NULL REFERENCES inmates(id),
+    location_id TEXT NOT NULL REFERENCES locations(id),
+    day_of_week INTEGER NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    activity_type TEXT NOT NULL,
+    is_recurring INTEGER DEFAULT 1,
+    effective_date TEXT,
+    source TEXT DEFAULT 'manual',
+    source_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX idx_schedule_inmate ON schedule_entries(inmate_id);
+CREATE INDEX idx_schedule_location ON schedule_entries(location_id);
+CREATE INDEX idx_schedule_day_time ON schedule_entries(day_of_week, start_time);
+CREATE INDEX idx_schedule_source ON schedule_entries(source, source_id);
 ```
 
 ### Mobile Cache Database (SQLite)
@@ -998,6 +1085,7 @@ server/
 │   │   │   ├── verification.py
 │   │   │   ├── locations.py
 │   │   │   ├── rollcalls.py
+│   │   │   ├── schedules.py
 │   │   │   └── sync.py
 │   │   └── middleware/
 │   │       └── auth.py
@@ -1008,6 +1096,7 @@ server/
 │   │   ├── inmate_service.py
 │   │   ├── location_service.py
 │   │   ├── rollcall_service.py
+│   │   ├── schedule_service.py
 │   │   └── audit_service.py
 │   │
 │   ├── models/
@@ -1016,6 +1105,7 @@ server/
 │   │   ├── location.py
 │   │   ├── rollcall.py
 │   │   ├── verification.py
+│   │   ├── schedule.py
 │   │   └── face.py
 │   │
 │   ├── db/
@@ -1026,9 +1116,13 @@ server/
 │   │   │   ├── embedding_repo.py
 │   │   │   ├── location_repo.py
 │   │   │   ├── rollcall_repo.py
-│   │   │   └── verification_repo.py
+│   │   │   ├── verification_repo.py
+│   │   │   └── schedule_repo.py
 │   │   └── migrations/
-│   │       └── 001_initial.sql
+│   │       ├── 001_initial.sql
+│   │       ├── 002_multiple_embeddings.sql
+│   │       ├── 003_location_connections.sql
+│   │       └── 004_schedule_entries.sql
 │   │
 │   └── ml/
 │       ├── __init__.py
@@ -1055,6 +1149,7 @@ server/
 ├── scripts/
 │   ├── setup_hotspot.sh        # WiFi hotspot setup
 │   ├── seed_data.py            # Test data seeding
+│   ├── generate_schedules.py   # Generate realistic 2-week schedules
 │   └── export_audit.py         # Audit log export
 │
 ├── requirements.txt
@@ -1404,7 +1499,31 @@ describe('Queue Mode', () => {
 - UI polish
 - Error states
 
-### Phase 7: Hardening (Week 7)
+### Phase 7: Regime/Schedule System (Week 7)
+
+- **Schedule data model**
+  - Migration 004: schedule_entries table
+  - Pydantic models for schedule entries
+  - ActivityType enum
+- **Schedule repository**
+  - CRUD operations
+  - Query by inmate, location, time
+  - Bulk import for sync
+- **Schedule service**
+  - Business logic for schedule management
+  - Conflict detection
+  - Roll call generation from schedules
+- **Schedule API endpoints**
+  - List, create, update, delete schedules
+  - Query endpoints (now, at time, by inmate/location)
+  - Auto-generate roll calls
+- **Demo data generator**
+  - Generate 2 weeks of realistic schedules for 1600 prisoners
+  - Include work assignments, education, healthcare appointments
+  - Weekday vs weekend patterns
+  - Individual variations (doctor appointments, legal visits)
+
+### Phase 8: Hardening (Week 8)
 
 - Full test coverage
 - Performance optimization

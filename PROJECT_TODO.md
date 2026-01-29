@@ -192,7 +192,50 @@
 
 ---
 
-### Phase 5: Server Hardening
+### Phase 5: Regime/Schedule System
+
+#### 5.1 Schedule Data Model
+- [ ] 📋 Schedule models designed (ActivityType, ScheduleEntry)
+- [ ] 🏗️ Migration 004 created (schedule_entries table)
+- [ ] 🧪 Model validation tests created
+- [ ] ✅ All tests pass
+
+#### 5.2 Schedule Repository
+- [ ] 📋 ScheduleRepository interface designed
+- [ ] 🏗️ ScheduleRepository built (app/db/repositories/schedule_repo.py)
+- [ ] 🧪 Repository tests created (CRUD, queries)
+- [ ] ✅ All tests pass
+
+#### 5.3 Schedule Service
+- [ ] 📋 ScheduleService designed
+- [ ] 🏗️ ScheduleService built (app/services/schedule_service.py)
+- [ ] 🧪 Service tests created (business logic, conflict detection)
+- [ ] ✅ All tests pass
+
+#### 5.4 Schedule API Endpoints
+- [ ] 📋 Schedule CRUD APIs designed
+- [ ] 🏗️ Schedule endpoints built (app/api/routes/schedules.py)
+- [ ] 🧪 Schedule API integration tests created
+- [ ] ✅ All tests pass
+
+#### 5.5 Roll Call Generation from Schedules
+- [ ] 📋 Auto-generation logic designed
+- [ ] 🏗️ POST /rollcalls/generate endpoint built
+- [ ] 🧪 Generation tests created
+- [ ] ✅ All tests pass
+
+#### 5.6 Demo Data Generator
+- [ ] 📋 Schedule generation strategy designed (2 weeks, realistic patterns)
+- [ ] 🏗️ generate_schedules.py script built
+- [ ] 🏗️ Weekday/weekend patterns implemented
+- [ ] 🏗️ Individual variations added (healthcare, legal visits)
+- [ ] 🏗️ Work assignments distributed across locations
+- [ ] 🧪 Generator validation tests created
+- [ ] ✅ All tests pass
+
+---
+
+### Phase 6: Server Hardening
 
 #### 5.1 Authentication Middleware
 - [ ] 📋 API key auth designed

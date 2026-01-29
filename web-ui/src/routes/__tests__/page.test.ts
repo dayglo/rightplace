@@ -35,7 +35,7 @@ describe('Home/Dashboard Page', () => {
 		{
 			id: '1',
 			name: 'Block A',
-			location_type: 'block',
+			type: 'block',
 			building: 'Main',
 			floor: 1,
 			capacity: 50,
@@ -45,11 +45,11 @@ describe('Home/Dashboard Page', () => {
 		{
 			id: '2',
 			name: 'Cell A-101',
-			location_type: 'cell',
+			type: 'cell',
 			building: 'Main',
 			floor: 1,
 			capacity: 1,
-			parent_location_id: '1',
+			parent_id: '1',
 			created_at: '2026-01-27T10:00:00',
 			updated_at: '2026-01-27T10:00:00'
 		}

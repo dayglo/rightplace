@@ -12,18 +12,49 @@
 
 	const getLocationIcon = (type: string): string => {
 		switch (type.toLowerCase()) {
-			case 'block':
+			// Hierarchical accommodation
+			case 'houseblock':
 				return '🏢';
+			case 'wing':
+				return '🏛️';
+			case 'landing':
+				return '🪜';
 			case 'cell':
 				return '🚪';
+			// Special units
+			case 'healthcare':
+				return '🏥';
+			case 'segregation':
+				return '🔒';
+			case 'vpu':
+				return '🛡️';
+			case 'induction':
+				return '📋';
+			// Facilities
+			case 'education':
+				return '📚';
+			case 'workshop':
+				return '🔧';
+			case 'gym':
+				return '💪';
+			case 'chapel':
+				return '⛪';
+			case 'visits':
+				return '👥';
+			case 'reception':
+				return '🎫';
+			case 'kitchen':
+				return '🍳';
 			case 'yard':
 				return '🌳';
+			case 'admin':
+				return '🏛️';
 			default:
 				return '📍';
 		}
 	};
 
-	const icon = $derived(getLocationIcon(location.location_type));
+	const icon = $derived(getLocationIcon(location.type));
 </script>
 
 <div class="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">

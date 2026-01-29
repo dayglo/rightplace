@@ -159,7 +159,7 @@ describe('API Service', () => {
 				{
 					id: '1',
 					name: 'Block A',
-					location_type: 'block',
+					type: 'block',
 					building: 'Main',
 					floor: 1,
 					capacity: 50,

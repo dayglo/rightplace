@@ -96,22 +96,22 @@ export async function deleteInmate(id: string): Promise<void> {
 export interface Location {
 	id: string;
 	name: string;
-	location_type: string;
+	type: string;
 	building: string;
 	floor: number;
 	capacity: number;
-	parent_location_id?: string;
+	parent_id?: string;
 	created_at: string;
 	updated_at: string;
 }
 
 export interface CreateLocationRequest {
 	name: string;
-	location_type: string;
+	type: string;
 	building: string;
 	floor: number;
 	capacity: number;
-	parent_location_id?: string;
+	parent_id?: string;
 }
 
 export async function getLocations(): Promise<Location[]> {
