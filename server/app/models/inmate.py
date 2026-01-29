@@ -16,8 +16,14 @@ class Inmate(BaseModel):
     first_name: str
     last_name: str
     date_of_birth: date
+    
+    # Home cell - links to location table
+    home_cell_id: str | None = None  # FK to locations
+    
+    # Legacy cell info (for display)
     cell_block: str
     cell_number: str
+    
     photo_uri: str | None = None
     is_enrolled: bool = False
     enrolled_at: datetime | None = None
@@ -35,6 +41,7 @@ class InmateCreate(BaseModel):
     date_of_birth: date
     cell_block: str
     cell_number: str
+    home_cell_id: str | None = None  # Optional FK to locations
 
 
 class InmateUpdate(BaseModel):
@@ -44,4 +51,5 @@ class InmateUpdate(BaseModel):
     last_name: str | None = None
     cell_block: str | None = None
     cell_number: str | None = None
+    home_cell_id: str | None = None  # Can update home cell assignment
     is_active: bool | None = None

@@ -40,9 +40,9 @@ class InmateRepository:
             """
             INSERT INTO inmates (
                 id, inmate_number, first_name, last_name,
-                date_of_birth, cell_block, cell_number,
+                date_of_birth, cell_block, cell_number, home_cell_id,
                 is_enrolled, is_active, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 inmate_id,
@@ -52,6 +52,7 @@ class InmateRepository:
                 inmate_data.date_of_birth.isoformat(),
                 inmate_data.cell_block,
                 inmate_data.cell_number,
+                inmate_data.home_cell_id,
                 0,  # is_enrolled defaults to False
                 1,  # is_active defaults to True
                 now.isoformat(),
@@ -192,6 +193,10 @@ class InmateRepository:
             updates.append("cell_number = ?")
             params.append(update_data.cell_number)
 
+        if update_data.home_cell_id is not None:
+            updates.append("home_cell_id = ?")
+            params.append(update_data.home_cell_id)
+
         if update_data.is_active is not None:
             updates.append("is_active = ?")
             params.append(1 if update_data.is_active else 0)
@@ -236,6 +241,24 @@ class InmateRepository:
 
         return cursor.rowcount > 0
 
+    def get_by_home_cell(self, home_cell_id: str) -> list[Inmate]:
+        """
+        Retrieve inmates by home cell location ID.
+
+        Args:
+            home_cell_id: Location ID of the home cell
+
+        Returns:
+            List of inmates assigned to this cell
+        """
+        cursor = self.conn.execute(
+            "SELECT * FROM inmates WHERE home_cell_id = ? ORDER BY last_name",
+            (home_cell_id,),
+        )
+        rows = cursor.fetchall()
+
+        return [self._row_to_inmate(row) for row in rows]
+
     def _row_to_inmate(self, row: sqlite3.Row) -> Inmate:
         """
         Convert database row to Inmate model.
@@ -246,12 +269,20 @@ class InmateRepository:
         Returns:
             Inmate model instance
         """
+        # Handle home_cell_id which may not exist in older databases
+        home_cell_id = None
+        try:
+            home_cell_id = row["home_cell_id"]
+        except (IndexError, KeyError):
+            pass
+        
         return Inmate(
             id=row["id"],
             inmate_number=row["inmate_number"],
             first_name=row["first_name"],
             last_name=row["last_name"],
             date_of_birth=datetime.fromisoformat(row["date_of_birth"]).date(),
+            home_cell_id=home_cell_id,
             cell_block=row["cell_block"],
             cell_number=row["cell_number"],
             photo_uri=row["photo_uri"],
