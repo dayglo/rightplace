@@ -95,6 +95,8 @@ def init_db(conn: sqlite3.Connection) -> None:
     migrations = [
         "001_initial.sql",
         "002_multiple_embeddings.sql",
+        "003_location_connections.sql",
+        "004_schedule_entries.sql",
     ]
     
     for migration_file in migrations:

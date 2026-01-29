@@ -170,3 +170,22 @@ def verification_repo(test_db):
     yield repo
     
     conn.close()
+
+
+@pytest.fixture
+def connection_repo(test_db):
+    """
+    Create a ConnectionRepository instance for testing.
+    
+    Returns:
+        ConnectionRepository instance configured with test database
+    """
+    from app.db.repositories.connection_repo import ConnectionRepository
+    from app.db.database import get_connection
+    
+    conn = get_connection(test_db)
+    repo = ConnectionRepository(conn)
+    
+    yield repo
+    
+    conn.close()
