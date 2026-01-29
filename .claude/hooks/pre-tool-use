@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""PreToolUse hook that enforces Bash permissions from settings.json."""
+import json
+import sys
+from pathlib import Path
+
+def load_settings():
+    allow_patterns = []
+    deny_patterns = []
+
+    # Check both user-level and project-level settings
+    settings_files = [
+        Path.home() / ".claude" / "settings.json",  # User settings
+        Path.cwd() / ".claude" / "settings.json",   # Project settings
+    ]
+
+    for settings_file in settings_files:
+        if settings_file.exists():
+            with open(settings_file, 'r') as f:
+                settings = json.load(f)
+                permissions = settings.get("permissions", {})
+
+                for rule in permissions.get("allow", []):
+                    if rule.startswith("Bash(") and rule.endswith(")"):
+                        pattern = rule[5:-1]
+                        if pattern not in allow_patterns:
+                            allow_patterns.append(pattern)
+
+                for rule in permissions.get("deny", []):
+                    if rule.startswith("Bash(") and rule.endswith(")"):
+                        pattern = rule[5:-1]
+                        if pattern not in deny_patterns:
+                            deny_patterns.append(pattern)
+
+    return allow_patterns, deny_patterns
+
+def pattern_matches(pattern, command):
+    command = command.strip()
+    if pattern.endswith(":*"):
+        return command.startswith(pattern[:-2])
+    if pattern.endswith(" *"):
+        return command.startswith(pattern[:-2])
+    return command.startswith(pattern)
+
+def main():
+    try:
+        input_data = json.load(sys.stdin)
+    except json.JSONDecodeError:
+        sys.exit(0)
+
+    if input_data.get("tool_name") != "Bash":
+        sys.exit(0)
+
+    command = input_data.get("tool_input", {}).get("command", "")
+    allow_patterns, deny_patterns = load_settings()
+
+    # Deny takes priority
+    for pattern in deny_patterns:
+        if pattern_matches(pattern, command):
+            print(json.dumps({
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "deny",
+                    "permissionDecisionReason": f"Denied: {pattern}"
+                }
+            }))
+            sys.exit(0)
+
+    # Check allow
+    for pattern in allow_patterns:
+        if pattern_matches(pattern, command):
+            print(json.dumps({
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "permissionDecisionReason": f"Allowed: {pattern}"
+                }
+            }))
+            sys.exit(0)
+
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()

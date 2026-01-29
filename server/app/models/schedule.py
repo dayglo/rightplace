@@ -47,11 +47,9 @@ class ScheduleEntry(BaseModel):
     @field_validator("end_time")
     @classmethod
     def validate_time_range(cls, v: str, info) -> str:
-        """Ensure end_time is after start_time."""
-        if "start_time" in info.data:
-            start = info.data["start_time"]
-            if v <= start:
-                raise ValueError("end_time must be after start_time")
+        """Validate end_time format (allows overnight schedules like lock_up 19:00-07:00)."""
+        # Note: We allow end_time <= start_time to support overnight schedules
+        # E.g., lock_up from 19:00 to 07:00 next morning
         return v
 
 
@@ -70,11 +68,9 @@ class ScheduleEntryCreate(BaseModel):
     @field_validator("end_time")
     @classmethod
     def validate_time_range(cls, v: str, info) -> str:
-        """Ensure end_time is after start_time."""
-        if "start_time" in info.data:
-            start = info.data["start_time"]
-            if v <= start:
-                raise ValueError("end_time must be after start_time")
+        """Validate end_time format (allows overnight schedules like lock_up 19:00-07:00)."""
+        # Note: We allow end_time <= start_time to support overnight schedules
+        # E.g., lock_up from 19:00 to 07:00 next morning
         return v
 
 

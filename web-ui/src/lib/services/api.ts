@@ -147,9 +147,11 @@ export async function deleteLocation(id: string): Promise<void> {
 // ============================================================================
 
 export interface RouteStop {
+	id: string;
 	location_id: string;
-	sequence_number: number;
-	expected_inmate_ids: string[];
+	order: number;
+	expected_inmates: string[];
+	status?: 'pending' | 'current' | 'completed' | 'skipped';
 }
 
 export interface RollCall {
@@ -184,8 +186,8 @@ export interface RollCallSummary {
 
 export interface CreateRollCallRequest {
 	name: string;
-	scheduled_time: string;
-	officer_id?: string;
+	scheduled_at: string;
+	officer_id: string;
 	route: RouteStop[];
 	notes?: string;
 }
@@ -214,6 +216,52 @@ export async function startRollCall(id: string): Promise<RollCall> {
 export async function completeRollCall(id: string): Promise<RollCall> {
 	return fetchAPI<RollCall>(`/rollcalls/${id}/complete`, {
 		method: 'POST'
+	});
+}
+
+// ============================================================================
+// ROLL CALL GENERATION
+// ============================================================================
+
+export interface GenerateRollCallRequest {
+	location_ids: string[];
+	scheduled_at: string;
+	include_empty?: boolean;
+	name?: string;
+	officer_id?: string;
+}
+
+export interface RouteStopSummary {
+	order: number;
+	location_id: string;
+	location_name: string;
+	location_type: string;
+	building: string;
+	floor: number;
+	is_occupied: boolean;
+	expected_count: number;
+	walking_distance_meters: number;
+	walking_time_seconds: number;
+}
+
+export interface GeneratedRollCallResponse {
+	location_ids: string[];
+	location_names: string[];
+	scheduled_at: string;
+	route: RouteStopSummary[];
+	summary: {
+		total_locations: number;
+		occupied_locations: number;
+		empty_locations: number;
+		total_prisoners_expected: number;
+		estimated_time_seconds: number;
+	};
+}
+
+export async function generateRollCall(data: GenerateRollCallRequest): Promise<GeneratedRollCallResponse> {
+	return fetchAPI<GeneratedRollCallResponse>('/rollcalls/generate', {
+		method: 'POST',
+		body: JSON.stringify(data)
 	});
 }
 

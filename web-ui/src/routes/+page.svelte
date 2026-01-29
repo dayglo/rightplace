@@ -2,13 +2,13 @@
 	import Navigation from '$lib/components/Navigation.svelte';
 	import StatCard from '$lib/components/StatCard.svelte';
 	import RollCallCard from '$lib/components/RollCallCard.svelte';
-	import type { Inmate, Location, RollCall } from '$lib/services/api';
+	import type { Inmate, Location, RollCallSummary } from '$lib/services/api';
 
 	interface Props {
 		data: {
 			inmates: Inmate[];
 			locations: Location[];
-			rollCalls: RollCall[];
+			rollCalls: RollCallSummary[];
 		};
 	}
 
@@ -20,25 +20,12 @@
 	// Get recent roll calls (limit to 5) - use derived state
 	let recentRollCalls = $derived(data.rollCalls.slice(0, 5));
 
-	// Calculate verification counts for roll calls
-	// For now, we'll use placeholder logic - in real app would fetch from verification records
-	function getVerificationCounts(rollCall: RollCall) {
-		// Count expected inmates from route
-		const totalCount = rollCall.route.reduce(
-			(sum, stop) => sum + stop.expected_inmate_ids.length,
-			0
-		);
-
-		// For completed roll calls, assume all verified
-		// For in_progress, assume partial verification
-		const verifiedCount =
-			rollCall.status === 'completed'
-				? totalCount
-				: rollCall.status === 'in_progress'
-					? Math.floor(totalCount / 2)
-					: 0;
-
-		return { verifiedCount, totalCount };
+	// Get verification counts from roll call summary
+	function getVerificationCounts(rollCall: RollCallSummary) {
+		return {
+			verifiedCount: rollCall.verified_inmates ?? 0,
+			totalCount: rollCall.expected_inmates ?? 0
+		};
 	}
 </script>
 

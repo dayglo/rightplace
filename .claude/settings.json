@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(agent-browser *)",
+      "Bash(npm *)",
+      "Bash(git *)",
+      "Bash(pytest *)",
+      "Bash(python *)",
+      "Bash(uvicorn *)",
+      "Bash(uv *)",
+      "Bash(pip *)",
+      "Bash(curl *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(pwd*)",
+      "Bash(which *)",
+      "Bash(sqlite3 *)",
+      "Bash(black *)",
+      "Bash(mypy *)",
+      "Bash(flake8 *)",
+      "Bash(./start-project.sh*)",
+      "Bash(./start-backend.sh*)",
+      "Bash(./start-frontend.sh*)",
+      "Bash(cd *)",
+      "Bash(chmod *)",
+      "Bash(netstat *)",
+      "Bash(ps *)",
+      "Bash(pkill *)",
+      "Bash(timeout *)",
+      "Edit(*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/pre-tool-use"
+          }
+        ]
+      }
+    ]
+  }
+}
