@@ -166,6 +166,22 @@ export interface RollCall {
 	updated_at: string;
 }
 
+export interface RollCallSummary {
+	id: string;
+	name: string;
+	status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+	scheduled_at: string;
+	started_at?: string;
+	completed_at?: string;
+	officer_id: string;
+	notes: string;
+	// Statistics
+	total_stops: number;
+	expected_inmates: number;
+	verified_inmates: number;
+	progress_percentage: number;
+}
+
 export interface CreateRollCallRequest {
 	name: string;
 	scheduled_time: string;
@@ -174,8 +190,8 @@ export interface CreateRollCallRequest {
 	notes?: string;
 }
 
-export async function getRollCalls(): Promise<RollCall[]> {
-	return fetchAPI<RollCall[]>('/rollcalls');
+export async function getRollCalls(): Promise<RollCallSummary[]> {
+	return fetchAPI<RollCallSummary[]>('/rollcalls');
 }
 
 export async function getRollCall(id: string): Promise<RollCall> {
@@ -298,6 +314,56 @@ export async function recordVerification(data: RecordVerificationRequest): Promi
 		method: 'POST',
 		body: JSON.stringify(data)
 	});
+}
+
+// ============================================================================
+// SCHEDULES
+// ============================================================================
+
+export interface ScheduleEntry {
+	id: string;
+	inmate_id: string;
+	location_id: string;
+	day_of_week: number; // 0=Monday, 6=Sunday
+	start_time: string; // "HH:MM"
+	end_time: string;
+	activity_type: string; // "work", "education", "meal", etc.
+	is_recurring: boolean;
+	effective_date?: string;
+	source: string;
+	source_id?: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export async function getInmateSchedule(inmateId: string): Promise<ScheduleEntry[]> {
+	return fetchAPI<ScheduleEntry[]>(`/schedules/inmate/${inmateId}`);
+}
+
+// ============================================================================
+// VERIFICATION RECORDS
+// ============================================================================
+
+export interface Verification {
+	id: string;
+	roll_call_id: string;
+	inmate_id: string;
+	location_id: string;
+	status: 'verified' | 'not_found' | 'wrong_location' | 'manual' | 'pending';
+	confidence: number;
+	photo_uri?: string;
+	timestamp: string;
+	is_manual_override: boolean;
+	manual_override_reason?: string;
+	notes: string;
+}
+
+export async function getInmateVerifications(
+	inmateId: string,
+	limit?: number
+): Promise<Verification[]> {
+	const params = limit ? `?limit=${limit}` : '';
+	return fetchAPI<Verification[]>(`/verifications/inmate/${inmateId}${params}`);
 }
 
 // ============================================================================

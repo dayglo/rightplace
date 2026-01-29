@@ -2,7 +2,7 @@
 Roll Call CRUD endpoints for Prison Roll Call API.
 """
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 
 from app.db.database import get_db
@@ -12,9 +12,12 @@ from app.db.repositories.location_repo import LocationRepository
 from app.db.repositories.inmate_repo import InmateRepository
 from app.db.repositories.schedule_repo import ScheduleRepository
 from app.db.repositories.connection_repo import ConnectionRepository
+from app.dependencies import get_audit_service
 from app.services.rollcall_service import RollCallService
 from app.services.pathfinding_service import PathfindingService
 from app.services.rollcall_generator_service import RollCallGeneratorService
+from app.services.audit_service import AuditService
+from app.models.audit import AuditAction
 from app.models.rollcall import RollCall, RollCallCreate
 from app.models.verification import (
     Verification,
@@ -45,6 +48,23 @@ def get_rollcall_service(
 
 
 # Request/Response models
+class RollCallSummary(BaseModel):
+    """Roll call with verification statistics for list view."""
+    id: str
+    name: str
+    status: str
+    scheduled_at: datetime
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    officer_id: str
+    notes: str = ""
+    # Statistics
+    total_stops: int
+    expected_inmates: int
+    verified_inmates: int
+    progress_percentage: float
+
+
 class CancelRequest(BaseModel):
     """Request body for cancelling a roll call."""
     reason: str
@@ -63,18 +83,40 @@ class VerificationRequest(BaseModel):
 
 
 # CRUD Endpoints
-@router.get("/rollcalls", response_model=list[RollCall])
+@router.get("/rollcalls", response_model=list[RollCallSummary])
 async def list_rollcalls(
     service: RollCallService = Depends(get_rollcall_service),
 ):
     """
-    Get all roll calls.
-    
+    Get all roll calls with verification statistics.
+
     Returns:
-        list[RollCall]: List of all roll calls
+        list[RollCallSummary]: List of all roll calls with progress stats
     """
     repo = service.rollcall_repo
-    return repo.get_all()
+    all_rollcalls = repo.get_all()
+
+    # Enrich each roll call with statistics
+    summaries = []
+    for rollcall in all_rollcalls:
+        stats = service.get_progress_stats(rollcall.id)
+        summary = RollCallSummary(
+            id=rollcall.id,
+            name=rollcall.name,
+            status=rollcall.status.value,
+            scheduled_at=rollcall.scheduled_at,
+            started_at=rollcall.started_at,
+            completed_at=rollcall.completed_at,
+            officer_id=rollcall.officer_id,
+            notes=rollcall.notes,
+            total_stops=stats["total_stops"],
+            expected_inmates=stats["expected_inmates"],
+            verified_inmates=stats["verified_inmates"],
+            progress_percentage=stats["progress_percentage"],
+        )
+        summaries.append(summary)
+
+    return summaries
 
 
 @router.get("/rollcalls/{rollcall_id}", response_model=RollCall)
@@ -152,22 +194,43 @@ async def delete_rollcall(
 @router.post("/rollcalls/{rollcall_id}/start", response_model=RollCall)
 async def start_rollcall(
     rollcall_id: str,
+    request: Request,
     service: RollCallService = Depends(get_rollcall_service),
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """
     Start a scheduled roll call.
-    
+
     Args:
         rollcall_id: Roll call UUID
-        
+        request: FastAPI request for user context
+        service: Roll call service
+        audit_service: Audit service for logging
+
     Returns:
         RollCall: The updated roll call
-        
+
     Raises:
         HTTPException: 404 if roll call not found, 400 if already started
     """
     try:
-        return service.start_roll_call(rollcall_id)
+        rollcall = service.start_roll_call(rollcall_id)
+
+        # Log the action
+        audit_service.log_action(
+            user_id=request.state.user_id,
+            action=AuditAction.ROLLCALL_STARTED,
+            entity_type="rollcall",
+            entity_id=rollcall_id,
+            details={
+                "location": rollcall.route[0].location_id if rollcall.route else None,
+                "expected_stops": len(rollcall.route),
+            },
+            ip_address=request.state.client_ip,
+            user_agent=request.state.user_agent,
+        )
+
+        return rollcall
     except ValueError as e:
         if "not found" in str(e):
             raise HTTPException(status_code=404, detail=str(e))
@@ -177,22 +240,48 @@ async def start_rollcall(
 @router.post("/rollcalls/{rollcall_id}/complete", response_model=RollCall)
 async def complete_rollcall(
     rollcall_id: str,
+    request: Request,
     service: RollCallService = Depends(get_rollcall_service),
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """
     Complete an in-progress roll call.
-    
+
     Args:
         rollcall_id: Roll call UUID
-        
+        request: FastAPI request for user context
+        service: Roll call service
+        audit_service: Audit service for logging
+
     Returns:
         RollCall: The updated roll call
-        
+
     Raises:
         HTTPException: 404 if roll call not found, 400 if not in progress
     """
     try:
-        return service.complete_roll_call(rollcall_id)
+        # Get stats before completing
+        stats = service.get_progress_stats(rollcall_id)
+
+        rollcall = service.complete_roll_call(rollcall_id)
+
+        # Log the action
+        audit_service.log_action(
+            user_id=request.state.user_id,
+            action=AuditAction.ROLLCALL_COMPLETED,
+            entity_type="rollcall",
+            entity_id=rollcall_id,
+            details={
+                "total_stops": stats["total_stops"],
+                "verified_inmates": stats["verified_inmates"],
+                "expected_inmates": stats["expected_inmates"],
+                "progress_percentage": stats["progress_percentage"],
+            },
+            ip_address=request.state.client_ip,
+            user_agent=request.state.user_agent,
+        )
+
+        return rollcall
     except ValueError as e:
         if "not found" in str(e):
             raise HTTPException(status_code=404, detail=str(e))
@@ -203,23 +292,41 @@ async def complete_rollcall(
 async def cancel_rollcall(
     rollcall_id: str,
     cancel_request: CancelRequest,
+    request: Request,
     service: RollCallService = Depends(get_rollcall_service),
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """
     Cancel a roll call with reason.
-    
+
     Args:
         rollcall_id: Roll call UUID
         cancel_request: Cancellation request with reason
-        
+        request: FastAPI request for user context
+        service: Roll call service
+        audit_service: Audit service for logging
+
     Returns:
         RollCall: The updated roll call
-        
+
     Raises:
         HTTPException: 404 if roll call not found, 400 if reason missing
     """
     try:
-        return service.cancel_roll_call(rollcall_id, cancel_request.reason)
+        rollcall = service.cancel_roll_call(rollcall_id, cancel_request.reason)
+
+        # Log the action
+        audit_service.log_action(
+            user_id=request.state.user_id,
+            action=AuditAction.ROLLCALL_CANCELLED,
+            entity_type="rollcall",
+            entity_id=rollcall_id,
+            details={"reason": cancel_request.reason},
+            ip_address=request.state.client_ip,
+            user_agent=request.state.user_agent,
+        )
+
+        return rollcall
     except ValueError as e:
         if "not found" in str(e):
             raise HTTPException(status_code=404, detail=str(e))
@@ -235,23 +342,29 @@ async def cancel_rollcall(
 async def record_verification(
     rollcall_id: str,
     verification_data: VerificationRequest,
+    request: Request,
     verification_repo: VerificationRepository = Depends(get_verification_repo),
+    audit_service: AuditService = Depends(get_audit_service),
 ):
     """
     Record a verification for a roll call.
-    
+
     Args:
         rollcall_id: Roll call UUID
         verification_data: Verification data
-        
+        request: FastAPI request for user context
+        verification_repo: Verification repository
+        audit_service: Audit service for logging
+
     Returns:
         Verification: The created verification record
-        
+
     Raises:
         HTTPException: 404 if roll call not found
     """
     try:
-        return verification_repo.create(
+        # Create verification
+        verification = verification_repo.create(
             roll_call_id=rollcall_id,
             inmate_id=verification_data.inmate_id,
             location_id=verification_data.location_id,
@@ -262,6 +375,35 @@ async def record_verification(
             manual_override_reason=verification_data.manual_override_reason,
             notes=verification_data.notes,
         )
+
+        # Log the action
+        action = (
+            AuditAction.MANUAL_OVERRIDE_USED
+            if verification_data.is_manual_override
+            else AuditAction.VERIFICATION_RECORDED
+        )
+
+        audit_service.log_action(
+            user_id=request.state.user_id,
+            action=action,
+            entity_type="verification",
+            entity_id=verification.id,
+            details={
+                "inmate_id": verification_data.inmate_id,
+                "location_id": verification_data.location_id,
+                "confidence": verification_data.confidence,
+                "status": verification_data.status.value,
+                "manual_override_reason": (
+                    verification_data.manual_override_reason.value
+                    if verification_data.manual_override_reason
+                    else None
+                ),
+            },
+            ip_address=request.state.client_ip,
+            user_agent=request.state.user_agent,
+        )
+
+        return verification
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

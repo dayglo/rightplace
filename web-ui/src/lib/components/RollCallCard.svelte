@@ -1,15 +1,20 @@
 <script lang="ts">
-	import type { RollCall } from '$lib/services/api';
-
 	interface Props {
-		rollCall: RollCall;
+		rollCall: {
+			id: string;
+			name: string;
+			status: string;
+			scheduled_time?: string;
+			scheduled_at?: string;
+		};
 		verifiedCount: number;
 		totalCount: number;
 	}
 
 	let { rollCall, verifiedCount, totalCount }: Props = $props();
 
-	function formatDateTime(dateString: string): string {
+	function formatDateTime(dateString?: string): string {
+		if (!dateString) return 'N/A';
 		const date = new Date(dateString);
 		return date.toLocaleDateString('en-US', {
 			month: 'short',
@@ -26,7 +31,8 @@
 			case 'in_progress':
 				return 'In Progress';
 			case 'pending':
-				return 'Pending';
+			case 'scheduled':
+				return 'Scheduled';
 			case 'cancelled':
 				return 'Cancelled';
 			default:
@@ -41,6 +47,7 @@
 			case 'in_progress':
 				return 'text-blue-600';
 			case 'pending':
+			case 'scheduled':
 				return 'text-gray-600';
 			case 'cancelled':
 				return 'text-red-600';
@@ -60,6 +67,6 @@
 	<div class="flex items-center gap-4 text-sm text-gray-600">
 		<span>{verifiedCount}/{totalCount} verified</span>
 		<span>|</span>
-		<span>{formatDateTime(rollCall.scheduled_time)}</span>
+		<span>{formatDateTime(rollCall.scheduled_time || rollCall.scheduled_at)}</span>
 	</div>
 </div>

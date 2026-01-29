@@ -139,6 +139,41 @@ class TestRollCallsCRUD:
         data = response.json()
         assert len(data) >= 2
 
+    def test_list_rollcalls_includes_statistics(self, client, sample_route):
+        """Should include verification statistics in roll call list."""
+        # Create a roll call
+        scheduled_at = (datetime.now() + timedelta(hours=1)).isoformat()
+        payload = {
+            "name": "Stats Test Roll Call",
+            "scheduled_at": scheduled_at,
+            "route": sample_route,
+            "officer_id": "officer1",
+        }
+        create_response = client.post("/api/v1/rollcalls", json=payload)
+        rollcall_id = create_response.json()["id"]
+
+        # List roll calls
+        response = client.get("/api/v1/rollcalls")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Find our roll call in the list
+        our_rollcall = next((rc for rc in data if rc["id"] == rollcall_id), None)
+        assert our_rollcall is not None
+
+        # Verify statistics are present
+        assert "total_stops" in our_rollcall
+        assert "expected_inmates" in our_rollcall
+        assert "verified_inmates" in our_rollcall
+        assert "progress_percentage" in our_rollcall
+
+        # Verify values match the test data
+        assert our_rollcall["total_stops"] == 2
+        assert our_rollcall["expected_inmates"] == 3  # 2 + 1 from sample_route
+        assert our_rollcall["verified_inmates"] == 0  # No verifications yet
+        assert our_rollcall["progress_percentage"] == 0.0
+
     def test_delete_rollcall(self, client, sample_route):
         """Should delete roll call."""
         # Create roll call
