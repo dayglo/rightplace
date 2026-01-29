@@ -213,10 +213,10 @@
 - [x] ✅ All tests pass
 
 #### 5.4 Schedule API Endpoints
-- [ ] 📋 Schedule CRUD APIs designed
-- [ ] 🏗️ Schedule endpoints built (app/api/routes/schedules.py)
-- [ ] 🧪 Schedule API integration tests created
-- [ ] ✅ All tests pass
+- [x] 📋 Schedule CRUD APIs designed
+- [x] 🏗️ Schedule endpoints built (app/api/routes/schedules.py)
+- [x] 🧪 Schedule API integration tests created
+- [x] ✅ All tests pass
 
 #### 5.5 Roll Call Generation from Schedules
 - [x] 📋 Auto-generation logic designed (multi-location support)
