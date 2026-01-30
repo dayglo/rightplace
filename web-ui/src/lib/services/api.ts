@@ -365,6 +365,28 @@ export async function recordVerification(data: RecordVerificationRequest): Promi
 }
 
 // ============================================================================
+// VERIFICATION RECORDS
+// ============================================================================
+
+export interface Verification {
+	id: string;
+	roll_call_id: string;
+	inmate_id: string;
+	location_id: string;
+	status: 'verified' | 'not_found' | 'wrong_location' | 'manual' | 'pending';
+	confidence: number;
+	photo_uri?: string;
+	timestamp: string;
+	is_manual_override: boolean;
+	manual_override_reason?: string;
+	notes: string;
+}
+
+export async function getRollCallVerifications(rollCallId: string): Promise<Verification[]> {
+	return fetchAPI<Verification[]>(`/verifications/roll-call/${rollCallId}`);
+}
+
+// ============================================================================
 // SCHEDULES
 // ============================================================================
 
