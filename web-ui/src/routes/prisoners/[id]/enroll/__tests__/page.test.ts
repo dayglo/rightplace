@@ -5,19 +5,16 @@ import type { Inmate } from '$lib/services/api';
 
 // Mock the camera service
 vi.mock('$lib/services/camera', () => ({
-	startCamera: vi.fn(),
+	startCamera: vi.fn().mockResolvedValue({ success: true }),
 	stopCamera: vi.fn(),
-	captureFrame: vi.fn()
+	captureFrame: vi.fn().mockResolvedValue('data:image/jpeg;base64,mockimage'),
+	getCameraStatus: vi.fn().mockReturnValue(true)
 }));
 
 // Mock the API service
 vi.mock('$lib/services/api', () => ({
-	enrollFace: vi.fn()
-}));
-
-// Mock SvelteKit navigation
-vi.mock('$app/navigation', () => ({
-	goto: vi.fn()
+	enrollFace: vi.fn().mockResolvedValue({ success: true, quality: 0.95 }),
+	getInmate: vi.fn()
 }));
 
 describe('Face Enrollment Page', () => {

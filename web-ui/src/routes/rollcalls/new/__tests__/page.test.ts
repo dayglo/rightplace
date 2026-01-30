@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import Page from '../+page.svelte';
 
 // Mock the navigation module
@@ -91,7 +91,9 @@ describe('Create Roll Call Page', () => {
 	it('should show inmate count for each location', () => {
 		render(Page, { props: { data: mockData } });
 
-		expect(screen.getByText('1 prisoner', { exact: false })).toBeInTheDocument();
+		// Both cells have 1 prisoner each, so "1 prisoner" appears twice
+		const prisonerCounts = screen.getAllByText('1 prisoner', { exact: false });
+		expect(prisonerCounts.length).toBe(2);
 		expect(screen.getByText('John Doe', { exact: false })).toBeInTheDocument();
 		expect(screen.getByText('Jane Smith', { exact: false })).toBeInTheDocument();
 	});
@@ -99,22 +101,21 @@ describe('Create Roll Call Page', () => {
 	it('should allow selecting locations for route', async () => {
 		render(Page, { props: { data: mockData } });
 
-		const checkbox = screen.getAllByRole('checkbox')[0];
-		await fireEvent.click(checkbox);
+		// First checkbox is "include empty", second is first location checkbox
+		const checkboxes = screen.getAllByRole('checkbox');
+		const locationCheckbox = checkboxes[1]; // Skip the "include empty" checkbox
+		await fireEvent.click(locationCheckbox);
 
-		// Should appear in selected route
-		expect(screen.getByText('1 location')).toBeInTheDocument();
+		// Should appear in selected count (using getAllByText to handle multiple occurrences)
+		expect(screen.getByText(/Selected: 1 location/)).toBeInTheDocument();
 	});
 
-	it('should show validation error when no locations selected', async () => {
+	it('should disable generate button when no locations selected', () => {
 		render(Page, { props: { data: mockData } });
 
-		const submitButton = screen.getByRole('button', { name: /create roll call/i });
-		await fireEvent.click(submitButton);
-
-		expect(
-			screen.getByText(/please select at least one location/i)
-		).toBeInTheDocument();
+		// Button should be disabled when no locations are selected
+		const submitButton = screen.getByRole('button', { name: /generate route/i });
+		expect(submitButton).toBeDisabled();
 	});
 
 	it('should show back button', () => {

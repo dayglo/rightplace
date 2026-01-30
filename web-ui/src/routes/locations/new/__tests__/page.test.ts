@@ -29,12 +29,12 @@ describe('Add Location Page', () => {
 		expect(typeSelect).toHaveAttribute('required');
 	});
 
-	it('should have type options for block, cell, yard', () => {
+	it('should have type options for houseblock, cell, yard', () => {
 		render(Page);
 		const typeSelect = screen.getByLabelText(/type/i);
 		const options = typeSelect.querySelectorAll('option');
 		const optionValues = Array.from(options).map((opt) => opt.getAttribute('value'));
-		expect(optionValues).toContain('block');
+		expect(optionValues).toContain('houseblock');
 		expect(optionValues).toContain('cell');
 		expect(optionValues).toContain('yard');
 	});

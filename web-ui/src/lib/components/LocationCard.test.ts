@@ -7,7 +7,7 @@ describe('LocationCard', () => {
 	const mockLocation: Location = {
 		id: '1',
 		name: 'Block A',
-		type: 'block',
+		type: 'houseblock',
 		building: 'Main',
 		floor: 1,
 		capacity: 50,
@@ -39,7 +39,7 @@ describe('LocationCard', () => {
 		expect(deleteButton).toBeInTheDocument();
 	});
 
-	it('should display icon for block type', () => {
+	it('should display icon for houseblock type', () => {
 		render(LocationCard, { props: { location: mockLocation } });
 		expect(screen.getByText('🏢')).toBeInTheDocument();
 	});

@@ -8,7 +8,7 @@ describe('Location List Page', () => {
 		{
 			id: '1',
 			name: 'Block A',
-			type: 'block',
+			type: 'houseblock',
 			building: 'Main',
 			floor: 1,
 			capacity: 50,
@@ -75,7 +75,7 @@ describe('Location List Page', () => {
 
 	it('should display location type icons', () => {
 		render(Page, { props: { data: { locations: mockLocations } } });
-		expect(screen.getByText('🏢')).toBeInTheDocument(); // Block
+		expect(screen.getByText('🏢')).toBeInTheDocument(); // Houseblock
 		expect(screen.getByText('🚪')).toBeInTheDocument(); // Cell
 		expect(screen.getByText('🌳')).toBeInTheDocument(); // Yard
 	});
