@@ -57,10 +57,9 @@
 		}
 	}
 
-	// Handle edit (navigate to edit page - not yet implemented)
+	// Handle edit (navigate to edit page)
 	function handleEdit(locationId: string) {
-		// TODO: Implement edit page
-		alert('Edit functionality coming soon');
+		window.location.href = `/locations/${locationId}/edit`;
 	}
 </script>
 
