@@ -90,7 +90,3 @@ SELECT * FROM location_tree WHERE type = 'cell';
 SELECT * FROM inmates WHERE home_cell_id = 'cell-id';
 ```
 
-### Get schedule for a prisoner
-```sql
-SELECT * FROM schedule_entries WHERE inmate_id = 'inmate-id' ORDER BY day_of_week, start_time;
-```

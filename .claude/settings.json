@@ -33,17 +33,5 @@
       "Bash(timeout *)",
       "Edit(*)"
     ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/pre-tool-use"
-          }
-        ]
-      }
-    ]
   }
 }

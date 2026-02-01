@@ -3,7 +3,7 @@ Roll Call CRUD endpoints for Prison Roll Call API.
 """
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.db.database import get_db
 from app.db.repositories.rollcall_repo import RollCallRepository
@@ -550,6 +550,18 @@ class ExpectedPrisonersResponse(BaseModel):
     total_expected: int
 
 
+class BatchCountsRequest(BaseModel):
+    """Request for batch expected prisoner counts."""
+    location_ids: list[str] = Field(..., max_length=2000, description="Location IDs to query (max 2000)")
+    at_time: datetime = Field(..., description="Time to check expected counts")
+
+
+class BatchCountsResponse(BaseModel):
+    """Response for batch expected prisoner counts."""
+    counts: dict[str, int] = Field(..., description="Map of location_id to expected count")
+    at_time: datetime = Field(..., description="Time the counts were calculated for")
+
+
 @router.get("/rollcalls/expected/{location_id}")
 async def get_expected_prisoners(
     location_id: str,
@@ -598,4 +610,33 @@ async def get_expected_prisoners(
         location_id=location_id,
         expected_prisoners=prisoners,
         total_expected=len(prisoners),
+    )
+
+
+@router.post("/rollcalls/expected/batch-counts", response_model=BatchCountsResponse)
+async def get_batch_expected_counts(
+    request: BatchCountsRequest,
+    generator: RollCallGeneratorService = Depends(get_generator_service),
+):
+    """
+    Get expected prisoner counts for multiple locations at once.
+
+    Efficient batch endpoint for UI display. Returns only counts, not full prisoner details.
+    Supports hierarchical locations (wings, houseblocks).
+
+    Args:
+        request: Batch request with location IDs and time
+        generator: Roll call generator service
+
+    Returns:
+        BatchCountsResponse: Map of location_id to expected count
+    """
+    counts = generator.get_batch_expected_counts(
+        request.location_ids,
+        request.at_time
+    )
+
+    return BatchCountsResponse(
+        counts=counts,
+        at_time=request.at_time,
     )

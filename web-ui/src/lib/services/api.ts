@@ -410,6 +410,51 @@ export async function getInmateSchedule(inmateId: string): Promise<ScheduleEntry
 	return fetchAPI<ScheduleEntry[]>(`/schedules/inmate/${inmateId}`);
 }
 
+export interface ExpectedPrisoner {
+	inmate_id: string;
+	inmate_number: string;
+	first_name: string;
+	last_name: string;
+	is_enrolled: boolean;
+}
+
+export interface ExpectedPrisonersResponse {
+	location_id: string;
+	expected_prisoners: ExpectedPrisoner[];
+	total_expected: number;
+}
+
+export async function getExpectedPrisoners(
+	locationId: string,
+	atTime?: string
+): Promise<ExpectedPrisonersResponse> {
+	const params = atTime ? `?at_time=${encodeURIComponent(atTime)}` : '';
+	return fetchAPI<ExpectedPrisonersResponse>(`/rollcalls/expected/${locationId}${params}`);
+}
+
+export interface BatchCountsRequest {
+	location_ids: string[];
+	at_time: string;
+}
+
+export interface BatchCountsResponse {
+	counts: Record<string, number>;
+	at_time: string;
+}
+
+export async function getBatchExpectedCounts(
+	locationIds: string[],
+	atTime: string
+): Promise<BatchCountsResponse> {
+	return fetchAPI<BatchCountsResponse>('/rollcalls/expected/batch-counts', {
+		method: 'POST',
+		body: JSON.stringify({
+			location_ids: locationIds,
+			at_time: atTime
+		})
+	});
+}
+
 // ============================================================================
 // VERIFICATION RECORDS
 // ============================================================================

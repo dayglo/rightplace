@@ -1,6 +1,11 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { generateRollCall, createRollCall, type GeneratedRollCallResponse } from '$lib/services/api';
+	import {
+		generateRollCall,
+		createRollCall,
+		getBatchExpectedCounts,
+		type GeneratedRollCallResponse
+	} from '$lib/services/api';
 	import { goto } from '$app/navigation';
 
 	interface Props {
@@ -16,6 +21,14 @@
 	let notes = $state('');
 	let selectedLocationIds = $state<string[]>([]);
 	let includeEmpty = $state(true);
+
+	// Search and filter state
+	let searchQuery = $state('');
+	let selectedType = $state<string>('all');
+
+	// Expected prisoner counts (schedule-aware)
+	let expectedCounts = $state<Record<string, number>>({});
+	let isLoadingCounts = $state(false);
 
 	// Generated route state
 	let generatedRoute: GeneratedRollCallResponse | null = $state(null);
@@ -33,16 +46,61 @@
 		}
 	});
 
-	// Get inmates count for a location
-	function getInmatesAtLocation(locationId: string): number {
-		return data.inmates.filter((inmate) => inmate.home_cell_id === locationId).length;
+	// Fetch schedule-aware counts when scheduled_at changes
+	$effect(() => {
+		if (scheduled_at) {
+			fetchExpectedCounts();
+		}
+	});
+
+	async function fetchExpectedCounts() {
+		if (!scheduled_at) return;
+
+		isLoadingCounts = true;
+		try {
+			// Get all unique location IDs
+			const locationIds = data.locations.map((loc) => loc.id);
+
+			// Fetch counts in one batch API call
+			const response = await getBatchExpectedCounts(locationIds, scheduled_at);
+			expectedCounts = response.counts;
+		} catch (err) {
+			console.error('Failed to fetch expected counts:', err);
+			expectedCounts = {};
+		} finally {
+			isLoadingCounts = false;
+		}
 	}
 
-	// Get inmate names for a location
-	function getInmateNamesAtLocation(locationId: string): string[] {
-		return data.inmates
-			.filter((inmate) => inmate.home_cell_id === locationId)
-			.map((inmate) => `${inmate.first_name} ${inmate.last_name}`);
+	// Get all descendant location IDs (including the location itself)
+	function getDescendantLocationIds(locationId: string): string[] {
+		const descendants = [locationId];
+		const queue = [locationId];
+
+		while (queue.length > 0) {
+			const currentId = queue.shift()!;
+			const children = data.locations.filter((loc) => loc.parent_id === currentId);
+
+			for (const child of children) {
+				descendants.push(child.id);
+				queue.push(child.id);
+			}
+		}
+
+		return descendants;
+	}
+
+	// Get inmates count for a location at the scheduled time
+	// Uses schedule-aware counts from API, falls back to home cell count
+	function getInmatesAtLocation(locationId: string): number {
+		// If we have schedule-aware counts, use them
+		if (expectedCounts[locationId] !== undefined) {
+			return expectedCounts[locationId];
+		}
+
+		// Fallback: calculate from home cell assignments
+		const locationIds = getDescendantLocationIds(locationId);
+		return data.inmates.filter((inmate) => locationIds.includes(inmate.home_cell_id)).length;
 	}
 
 	// Get location by ID
@@ -58,6 +116,19 @@
 			selectedLocationIds = [...selectedLocationIds, locationId];
 		}
 		// Clear generated route when selection changes
+		generatedRoute = null;
+	}
+
+	// Select all filtered locations
+	function selectAllFiltered() {
+		const allFilteredIds = filteredLocations.map((loc) => loc.id);
+		selectedLocationIds = [...new Set([...selectedLocationIds, ...allFilteredIds])];
+		generatedRoute = null;
+	}
+
+	// Clear all selected locations
+	function clearAll() {
+		selectedLocationIds = [];
 		generatedRoute = null;
 	}
 
@@ -145,8 +216,33 @@
 		}
 	}
 
-	// Filter locations to only show cells (for simplicity)
-	const cellLocations = $derived(data.locations.filter((loc) => loc.type === 'cell'));
+	// Filter locations based on search query and type
+	const filteredLocations = $derived.by(() => {
+		let filtered = data.locations;
+
+		// Filter by type if not "all"
+		if (selectedType !== 'all') {
+			filtered = filtered.filter((loc) => loc.type === selectedType);
+		}
+
+		// Filter by search query
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			filtered = filtered.filter((loc) =>
+				loc.name.toLowerCase().includes(query) ||
+				loc.type.toLowerCase().includes(query) ||
+				loc.building?.toLowerCase().includes(query)
+			);
+		}
+
+		return filtered;
+	});
+
+	// Get unique location types for the filter dropdown
+	const locationTypes = $derived.by(() => {
+		const types = new Set(data.locations.map((loc) => loc.type));
+		return Array.from(types).sort();
+	});
 
 	// Format time in minutes and seconds
 	function formatTime(seconds: number): string {
@@ -251,19 +347,79 @@
 
 			<!-- Location Selection -->
 			<div class="bg-white rounded-lg shadow p-6">
-				<h2 class="text-xl font-semibold text-gray-900 mb-4">Select Locations</h2>
+				<div class="flex items-center justify-between mb-4">
+					<h2 class="text-xl font-semibold text-gray-900">Select Locations</h2>
+					{#if isLoadingCounts}
+						<span class="text-sm text-blue-600">Calculating expected counts...</span>
+					{:else if Object.keys(expectedCounts).length > 0}
+						<span class="text-sm text-green-600">✓ Schedule-aware counts loaded</span>
+					{/if}
+				</div>
 				<p class="text-sm text-gray-600 mb-4">
-					Choose cells, wings, or houseblocks. The system will generate an optimal walking route.
+					Counts show prisoners expected at each location at the scheduled time, based on their schedules.
 				</p>
 
+				<!-- Search and Filter Controls -->
+				<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+					<!-- Search Input -->
+					<div>
+						<label for="location-search" class="block text-sm font-medium text-gray-700 mb-1">
+							Search by name
+						</label>
+						<input
+							type="text"
+							id="location-search"
+							bind:value={searchQuery}
+							placeholder="Search locations..."
+							class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						/>
+					</div>
+
+					<!-- Type Filter Dropdown -->
+					<div>
+						<label for="type-filter" class="block text-sm font-medium text-gray-700 mb-1">
+							Filter by type
+						</label>
+						<select
+							id="type-filter"
+							bind:value={selectedType}
+							class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="all">All types</option>
+							{#each locationTypes as type (type)}
+								<option value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+
+				<!-- Quick Actions -->
+				<div class="flex gap-2 mb-4">
+					<button
+						type="button"
+						onclick={selectAllFiltered}
+						disabled={filteredLocations.length === 0}
+						class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						Select All ({filteredLocations.length})
+					</button>
+					<button
+						type="button"
+						onclick={clearAll}
+						disabled={selectedLocationIds.length === 0}
+						class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						Clear All
+					</button>
+				</div>
+
 				<div class="border border-gray-300 rounded-lg p-4 max-h-96 overflow-y-auto">
-					{#if cellLocations.length === 0}
-						<p class="text-gray-500 text-sm">No locations available</p>
+					{#if filteredLocations.length === 0}
+						<p class="text-gray-500 text-sm">No locations match your search</p>
 					{:else}
 						<div class="space-y-2">
-							{#each cellLocations as location (location.id)}
+							{#each filteredLocations as location (location.id)}
 								{@const inmatesCount = getInmatesAtLocation(location.id)}
-								{@const inmateNames = getInmateNamesAtLocation(location.id)}
 								<label class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
 									<input
 										type="checkbox"
@@ -272,13 +428,18 @@
 										class="mt-1"
 									/>
 									<div class="flex-1">
-										<div class="font-medium text-gray-900">{location.name}</div>
+										<div class="flex items-center gap-2">
+											<span class="font-medium text-gray-900">{location.name}</span>
+											<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+												{location.type}
+											</span>
+										</div>
 										<div class="text-sm text-gray-600">
 											{inmatesCount} {inmatesCount === 1 ? 'prisoner' : 'prisoners'}
-											{#if inmateNames.length > 0}
-												<span class="text-gray-500">
-													({inmateNames.join(', ')})
-												</span>
+											{#if expectedCounts[location.id] !== undefined}
+												<span class="text-green-600">(expected)</span>
+											{:else}
+												<span class="text-gray-500">(home cell)</span>
 											{/if}
 										</div>
 									</div>

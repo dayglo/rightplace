@@ -239,6 +239,44 @@ class RollCallGeneratorService:
             estimated_time_seconds=estimated_time,
         )
 
+    def _get_descendant_location_ids(self, location_id: str) -> list[str]:
+        """
+        Get all descendant location IDs including the location itself.
+
+        Traverses the location hierarchy to find all child locations.
+        Useful for hierarchical queries (e.g., find all cells in a wing).
+
+        Args:
+            location_id: The parent location ID
+
+        Returns:
+            List of location IDs including the parent and all descendants
+        """
+        # Fetch all locations once for efficient traversal
+        all_locations = self.location_repo.get_all()
+
+        # Build a parent_id -> children map
+        children_map: dict[str, list[str]] = {}
+        for loc in all_locations:
+            if loc.parent_id:
+                if loc.parent_id not in children_map:
+                    children_map[loc.parent_id] = []
+                children_map[loc.parent_id].append(loc.id)
+
+        # Breadth-first search to find all descendants
+        descendants = [location_id]
+        queue = [location_id]
+
+        while queue:
+            current_id = queue.pop(0)
+            children = children_map.get(current_id, [])
+
+            for child_id in children:
+                descendants.append(child_id)
+                queue.append(child_id)
+
+        return descendants
+
     def _is_prisoner_at_home(
         self, inmate_id: str, home_cell_id: str, day_of_week: int, time_str: str
     ) -> bool:
@@ -277,6 +315,9 @@ class RollCallGeneratorService:
         """
         Get list of prisoners expected at a location with priority info.
 
+        Supports hierarchical locations - querying a wing returns all prisoners
+        in cells within that wing.
+
         Args:
             location_id: The location to check
             at_time: The time to check
@@ -286,11 +327,16 @@ class RollCallGeneratorService:
         """
         day_of_week = at_time.weekday()
         time_str = at_time.strftime("%H:%M")
-        
+
         expected_prisoners: list[ExpectedPrisoner] = []
-        
-        # Get prisoners whose home cell this is
-        home_cell_prisoners = self.inmate_repo.get_by_home_cell(location_id)
+
+        # Get all descendant location IDs (for hierarchical queries)
+        descendant_ids = self._get_descendant_location_ids(location_id)
+
+        # Get prisoners from all descendant locations
+        home_cell_prisoners = []
+        for loc_id in descendant_ids:
+            home_cell_prisoners.extend(self.inmate_repo.get_by_home_cell(loc_id))
         
         for prisoner in home_cell_prisoners:
             # Check if they're supposed to be here
@@ -329,8 +375,98 @@ class RollCallGeneratorService:
         
         # Sort by priority (highest first)
         expected_prisoners.sort(key=lambda p: p.priority_score, reverse=True)
-        
+
         return expected_prisoners
+
+    def get_batch_expected_counts(
+        self,
+        location_ids: list[str],
+        at_time: datetime,
+    ) -> dict[str, int]:
+        """
+        Get expected prisoner counts for multiple locations efficiently.
+
+        Optimized approach: Load all schedules active at the specified time
+        to determine who is NOT at home, then count remaining prisoners.
+
+        Args:
+            location_ids: List of location IDs to query
+            at_time: Time to check expected counts
+
+        Returns:
+            Dictionary mapping location_id to expected count
+        """
+        day_of_week = at_time.weekday()
+        time_str = at_time.strftime("%H:%M")
+
+        # Pre-fetch all data we'll need
+        all_locations = self.location_repo.get_all()
+        all_inmates = self.inmate_repo.get_all()
+
+        # Build location hierarchy map for efficient lookups
+        children_map: dict[str, list[str]] = {}
+        for loc in all_locations:
+            if loc.parent_id:
+                if loc.parent_id not in children_map:
+                    children_map[loc.parent_id] = []
+                children_map[loc.parent_id].append(loc.id)
+
+        # Build home_cell_id -> inmates map
+        inmates_by_cell: dict[str, list] = {}
+        for inmate in all_inmates:
+            if inmate.home_cell_id:
+                if inmate.home_cell_id not in inmates_by_cell:
+                    inmates_by_cell[inmate.home_cell_id] = []
+                inmates_by_cell[inmate.home_cell_id].append(inmate)
+
+        # OPTIMIZATION: Get all schedules active at this time in ONE query
+        # This tells us who is NOT at their home cell
+        active_schedules = self.schedule_repo.get_at_time(day_of_week, time_str)
+
+        # Build set of inmates who are scheduled elsewhere (NOT at home)
+        inmates_not_at_home = {entry.inmate_id for entry in active_schedules}
+
+        # Calculate counts for each location
+        counts: dict[str, int] = {}
+
+        for location_id in location_ids:
+            # Get descendant location IDs using cached hierarchy
+            descendant_ids = self._get_descendant_ids_cached(
+                location_id, children_map
+            )
+
+            # Get prisoners from descendant cells
+            home_cell_prisoners = []
+            for loc_id in descendant_ids:
+                home_cell_prisoners.extend(inmates_by_cell.get(loc_id, []))
+
+            # Count prisoners who should be at this location
+            # (those NOT in the scheduled-elsewhere set)
+            count = sum(
+                1 for prisoner in home_cell_prisoners
+                if prisoner.id not in inmates_not_at_home
+            )
+
+            counts[location_id] = count
+
+        return counts
+
+    def _get_descendant_ids_cached(
+        self, location_id: str, children_map: dict[str, list[str]]
+    ) -> list[str]:
+        """Get descendant location IDs using cached hierarchy map."""
+        descendants = [location_id]
+        queue = [location_id]
+
+        while queue:
+            current_id = queue.pop(0)
+            children = children_map.get(current_id, [])
+
+            for child_id in children:
+                descendants.append(child_id)
+                queue.append(child_id)
+
+        return descendants
 
     def _get_next_appointment(
         self,
