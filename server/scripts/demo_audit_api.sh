@@ -296,7 +296,7 @@ import json
 from datetime import datetime, timedelta
 
 # Connect to database
-conn = sqlite3.connect('prison_rollcall.db')
+conn = sqlite3.connect('data/prison_rollcall.db')
 conn.row_factory = sqlite3.Row
 cursor = conn.cursor()
 
@@ -380,5 +380,5 @@ echo ""
 echo "You can:"
 echo "  1. Review the CSV file: cat $EXPORT_FILE"
 echo "  2. Query specific actions: python3 -c \"from app.db.repositories.audit_repo import *\""
-echo "  3. View in SQLite: sqlite3 prison_rollcall.db 'SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 10'"
+echo "  3. View in SQLite: sqlite3 data/prison_rollcall.db 'SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 10'"
 echo ""

@@ -352,6 +352,53 @@ git add app/services/verification_service.py tests/unit/test_verification_servic
 git commit -m "feat(verification): add face matching service"
 ```
 
+## Git Worktrees for Parallel Agent Development
+
+Git worktrees enable multiple Claude Code instances to work on different features simultaneously without conflicts. See `docs/WORKTREE_GUIDE.md` for complete documentation.
+
+### Directory Structure
+```
+/home/george_cairns/code/
+├── rightplace/                    # Main worktree (main branch)
+└── rightplace-worktrees/          # Container for feature worktrees
+    ├── feature-auth/
+    ├── bugfix-face-detection/
+    └── ...
+```
+
+### Quick Commands
+
+```bash
+# Create new worktree for a feature
+./scripts/worktree-new.sh feature-my-feature
+
+# List all worktrees
+./scripts/worktree-list.sh
+
+# Open worktree in VSCode (start new Claude Code session)
+code /home/george_cairns/code/rightplace-worktrees/feature-my-feature
+
+# Remove worktree after merging
+./scripts/worktree-remove.sh feature-my-feature
+```
+
+### Naming Conventions
+
+| Prefix | Use Case |
+|--------|----------|
+| `feature-` | New features |
+| `bugfix-` | Bug fixes |
+| `refactor-` | Code improvements |
+| `experiment-` | Experimental work |
+
+### Workflow for Multi-Agent Development
+
+1. **Create a worktree** for each independent task
+2. **Open separate VSCode windows** for each worktree
+3. **Start Claude Code** in each window - they work in isolation
+4. **Merge branches** when tasks complete
+5. **Remove worktrees** to clean up
+
 ## Security Considerations
 
 - **No internet connectivity** - closed local network only

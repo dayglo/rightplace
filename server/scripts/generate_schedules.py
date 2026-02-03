@@ -202,12 +202,12 @@ def create_prisoners(conn, num_prisoners=1600):
         now = datetime.utcnow().isoformat()
         
         conn.execute("""
-            INSERT INTO inmates 
-            (id, inmate_number, first_name, last_name, date_of_birth, 
-             cell_block, cell_number, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            INSERT INTO inmates
+            (id, inmate_number, first_name, last_name, date_of_birth,
+             cell_block, cell_number, home_cell_id, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
         """, (prisoner_id, inmate_number, first_name, last_name, dob.isoformat(),
-              cell_block, cell_number, now, now))
+              cell_block, cell_number, cell_id, now, now))
         
         prisoners.append({
             "id": prisoner_id,

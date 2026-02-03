@@ -80,6 +80,7 @@ Desktop.ini
 .env.local
 .env.*.local
 .envrc
+.worktree.env
 
 # Logs
 *.log
