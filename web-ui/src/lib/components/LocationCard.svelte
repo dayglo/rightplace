@@ -3,12 +3,12 @@
 
 	interface Props {
 		location: Location;
-		parentName?: string;
+		hierarchyPath: string;
 		onEdit?: () => void;
 		onDelete?: () => void;
 	}
 
-	let { location, parentName, onEdit, onDelete }: Props = $props();
+	let { location, hierarchyPath, onEdit, onDelete }: Props = $props();
 
 	const getLocationIcon = (type: string): string => {
 		switch (type.toLowerCase()) {
@@ -65,12 +65,9 @@
 
 			<!-- Location Info -->
 			<div class="flex-1">
-				<h3 class="text-lg font-semibold text-gray-900 mb-2">{location.name}</h3>
+				<h3 class="text-lg font-semibold text-gray-900 mb-2">{hierarchyPath}</h3>
 				<div class="text-sm text-gray-600 space-y-1">
 					<p>Building: {location.building} | Floor: {location.floor} | Capacity: {location.capacity}</p>
-					{#if parentName}
-						<p>Parent: {parentName}</p>
-					{/if}
 				</div>
 			</div>
 		</div>

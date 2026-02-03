@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import LocationCard from '$lib/components/LocationCard.svelte';
-	import { deleteLocation } from '$lib/services/api';
+	import { deleteLocation, getLocationHierarchyPath } from '$lib/services/api';
 
 	interface Props {
 		data: PageData;
@@ -35,12 +35,6 @@
 		return result;
 	});
 
-	// Get parent location name
-	function getParentName(parentId?: string): string | undefined {
-		if (!parentId) return undefined;
-		const parent = data.locations.find((loc) => loc.id === parentId);
-		return parent?.name;
-	}
 
 	// Handle delete
 	async function handleDelete(locationId: string) {
@@ -136,7 +130,7 @@
 				{#each filteredLocations() as location (location.id)}
 					<LocationCard
 						{location}
-						parentName={getParentName(location.parent_id)}
+						hierarchyPath={getLocationHierarchyPath(location, data.locations)}
 						onEdit={() => handleEdit(location.id)}
 						onDelete={() => handleDelete(location.id)}
 					/>

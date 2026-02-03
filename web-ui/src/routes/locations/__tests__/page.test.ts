@@ -56,10 +56,10 @@ describe('Location List Page', () => {
 		expect(selects.length).toBeGreaterThanOrEqual(1);
 	});
 
-	it('should render all locations', () => {
+	it('should render all locations with hierarchy paths', () => {
 		render(Page, { props: { data: { locations: mockLocations } } });
 		expect(screen.getByText('Block A')).toBeInTheDocument();
-		expect(screen.getByText('Cell A-101')).toBeInTheDocument();
+		expect(screen.getByText('Block A > Cell A-101')).toBeInTheDocument();
 		expect(screen.getByText('Yard')).toBeInTheDocument();
 	});
 

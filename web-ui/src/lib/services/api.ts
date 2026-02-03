@@ -105,6 +105,30 @@ export interface Location {
 	updated_at: string;
 }
 
+/**
+ * Build the full hierarchy path for a location
+ * @param location The location to build the path for
+ * @param allLocations All locations to build the path from
+ * @returns Full hierarchy path (e.g., "Houseblock 1 > Wing A > Cell 42")
+ */
+export function getLocationHierarchyPath(location: Location, allLocations: Location[]): string {
+	const path: string[] = [];
+	let current: Location | undefined = location;
+
+	// Walk up the parent chain
+	while (current) {
+		path.unshift(current.name); // Add to beginning of array
+		if (current.parent_id) {
+			current = allLocations.find((loc) => loc.id === current!.parent_id);
+		} else {
+			break;
+		}
+	}
+
+	// Join with ' > ' separator
+	return path.join(' > ');
+}
+
 export interface CreateLocationRequest {
 	name: string;
 	type: string;

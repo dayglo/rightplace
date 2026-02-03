@@ -4,6 +4,7 @@
 		generateRollCall,
 		createRollCall,
 		getBatchExpectedCounts,
+		getLocationHierarchyPath,
 		type GeneratedRollCallResponse
 	} from '$lib/services/api';
 	import { goto } from '$app/navigation';
@@ -228,11 +229,14 @@
 		// Filter by search query
 		if (searchQuery.trim()) {
 			const query = searchQuery.toLowerCase();
-			filtered = filtered.filter((loc) =>
-				loc.name.toLowerCase().includes(query) ||
-				loc.type.toLowerCase().includes(query) ||
-				loc.building?.toLowerCase().includes(query)
-			);
+			filtered = filtered.filter((loc) => {
+				const hierarchyPath = getLocationHierarchyPath(loc, data.locations);
+				return (
+					hierarchyPath.toLowerCase().includes(query) ||
+					loc.type.toLowerCase().includes(query) ||
+					loc.building?.toLowerCase().includes(query)
+				);
+			});
 		}
 
 		return filtered;
@@ -249,6 +253,22 @@
 		const mins = Math.floor(seconds / 60);
 		const secs = seconds % 60;
 		return `${mins}m ${secs}s`;
+	}
+
+	// Format datetime for display
+	function formatDateTime(isoString: string): string {
+		const date = new Date(isoString);
+		const dateStr = date.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
+		const timeStr = date.toLocaleTimeString('en-US', {
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: true
+		});
+		return `${dateStr} at ${timeStr}`;
 	}
 </script>
 
@@ -352,7 +372,7 @@
 					{#if isLoadingCounts}
 						<span class="text-sm text-blue-600">Calculating expected counts...</span>
 					{:else if Object.keys(expectedCounts).length > 0}
-						<span class="text-sm text-green-600">✓ Schedule-aware counts loaded</span>
+						<span class="text-sm text-green-600">✓ Schedule-aware counts loaded for {formatDateTime(scheduled_at)}</span>
 					{/if}
 				</div>
 				<p class="text-sm text-gray-600 mb-4">
@@ -429,7 +449,7 @@
 									/>
 									<div class="flex-1">
 										<div class="flex items-center gap-2">
-											<span class="font-medium text-gray-900">{location.name}</span>
+											<span class="font-medium text-gray-900">{getLocationHierarchyPath(location, data.locations)}</span>
 											<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
 												{location.type}
 											</span>
