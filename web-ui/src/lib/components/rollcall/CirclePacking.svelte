@@ -71,7 +71,11 @@
 
 		pack(root as any);
 
-		// Initialize focus and view (default zoomed out more for better overview)
+		// Initialize focus and view
+		// NOTE: View diameter controls zoom level:
+		//   - SMALLER value (e.g., 2.6) = MORE zoomed in (closer view, less visible)
+		//   - LARGER value (e.g., 6.5) = MORE zoomed out (wider view, more visible)
+		//   Current: 4.0 = balanced default showing good detail + context
 		focus = root;
 		view = [focus.x, focus.y, focus.r * 4.0];
 
@@ -123,12 +127,13 @@
 			if (!focus || !svg) return;
 
 			// Calculate new diameter
+			// Zoom 'in' = smaller diameter (0.8x), zoom 'out' = larger diameter (1.25x)
 			const zoomFactor = direction === 'in' ? 0.8 : 1.25; // 20% change
 			let newDiameter = view[2] * zoomFactor;
 
-			// Clamp to limits
-			const minDiameter = focus.r * 1.5;
-			const maxDiameter = root.r * 6.5;
+			// Clamp to limits (min = closest zoom, max = furthest zoom)
+			const minDiameter = focus.r * 1.5;  // Closest you can zoom in
+			const maxDiameter = root.r * 6.5;   // Furthest you can zoom out
 			newDiameter = Math.max(minDiameter, Math.min(maxDiameter, newDiameter));
 
 			// Keep same center, change diameter
