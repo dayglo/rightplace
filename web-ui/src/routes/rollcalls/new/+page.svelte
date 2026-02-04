@@ -20,6 +20,7 @@
 	let scheduled_at = $state('');
 	let officer_id = $state('');
 	let notes = $state('');
+	let selectedPrisonId = $state('');
 	let selectedLocationIds = $state<string[]>([]);
 	let includeEmpty = $state(true);
 
@@ -36,6 +37,19 @@
 	let isGenerating = $state(false);
 	let isCreating = $state(false);
 	let error = $state('');
+
+	// Get all prisons from locations
+	const prisons = $derived.by(() => {
+		return data.locations.filter((loc) => loc.type === 'prison');
+	});
+
+	// Set default prison to Oakwood
+	$effect(() => {
+		if (!selectedPrisonId && prisons.length > 0) {
+			const oakwood = prisons.find((p) => p.name === 'HMP Oakwood');
+			selectedPrisonId = oakwood ? oakwood.id : prisons[0].id;
+		}
+	});
 
 	// Calculate default scheduled time (tomorrow at 9:00 AM)
 	$effect(() => {
@@ -217,9 +231,18 @@
 		}
 	}
 
+	// Get all locations that belong to the selected prison
+	const prisonLocations = $derived.by(() => {
+		if (!selectedPrisonId) return [];
+
+		// Get all descendant locations of the selected prison
+		const descendants = getDescendantLocationIds(selectedPrisonId);
+		return data.locations.filter((loc) => descendants.includes(loc.id) && loc.type !== 'prison');
+	});
+
 	// Filter locations based on search query and type
 	const filteredLocations = $derived.by(() => {
-		let filtered = data.locations;
+		let filtered = prisonLocations;
 
 		// Filter by type if not "all"
 		if (selectedType !== 'all') {
@@ -242,9 +265,9 @@
 		return filtered;
 	});
 
-	// Get unique location types for the filter dropdown
+	// Get unique location types for the filter dropdown (from prison locations only)
 	const locationTypes = $derived.by(() => {
-		const types = new Set(data.locations.map((loc) => loc.type));
+		const types = new Set(prisonLocations.map((loc) => loc.type));
 		return Array.from(types).sort();
 	});
 
@@ -304,6 +327,27 @@
 							placeholder="Morning Roll Call - Jan 30"
 							required
 						/>
+					</div>
+
+					<!-- Prison Selection -->
+					<div>
+						<label for="prison" class="block text-sm font-medium text-gray-700 mb-1">
+							Prison *
+						</label>
+						<select
+							id="prison"
+							bind:value={selectedPrisonId}
+							onchange={() => {
+								selectedLocationIds = [];
+								generatedRoute = null;
+							}}
+							class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							required
+						>
+							{#each prisons as prison (prison.id)}
+								<option value={prison.id}>{prison.name}</option>
+							{/each}
+						</select>
 					</div>
 
 					<!-- Scheduled Time -->
