@@ -205,15 +205,15 @@
 				}
 				// Position houseblock labels near the top (but lower than prison)
 				if (d.data.type === 'houseblock') {
-					return -d.r + 40; // Move down a bit more
+					return -d.r + 60; // Move down more for larger text
 				}
 				// Position wing labels near the top
 				if (d.data.type === 'wing') {
-					return -d.r + 20; // Near the top
+					return -d.r + 60; // Near the top, adjusted for larger text
 				}
-				// Position landing labels a bit further down
+				// Position landing labels higher to make room for two-line text
 				if (d.data.type === 'landing') {
-					return -d.r + 35; // Further down than wing
+					return -d.r + 80; // Higher position for two-line layout
 				}
 				return '0.3em'; // Center for other types
 			})
@@ -222,6 +222,11 @@
 				if (d.r < 20) return '';
 				// Don't render the root/current level label (we have it in top right)
 				if (d.depth === 0) return '';
+				// For landing, split the text - show first part, add second part as tspan later
+				if (d.data.type === 'landing') {
+					const parts = d.data.name.split(' ');
+					return parts[0]; // "Landing"
+				}
 				return d.data.name;
 			})
 			.attr('font-size', (d: any) => {
@@ -229,13 +234,17 @@
 				if (d.data.type === 'prison') {
 					return Math.min(d.r / 3, 24) + 'px';
 				}
-				// Larger font for houseblock and wing
-				if (d.data.type === 'houseblock' || d.data.type === 'wing') {
-					return Math.min(d.r / 4, 18) + 'px';
+				// Houseblock: 2x bigger
+				if (d.data.type === 'houseblock') {
+					return Math.min(d.r / 2, 36) + 'px';
 				}
-				// Even larger font for landing (60 inmates, needs to be prominent)
+				// Wing: 3x bigger
+				if (d.data.type === 'wing') {
+					return Math.min(d.r * 0.75, 54) + 'px';
+				}
+				// Landing: 5x bigger (for "Landing" text)
 				if (d.data.type === 'landing') {
-					return Math.min(d.r / 3, 20) + 'px';
+					return Math.min(d.r * 1.67, 100) + 'px';
 				}
 				return Math.min(d.r / 3, 14) + 'px';
 			})
@@ -258,12 +267,18 @@
 				return 'none';
 			})
 			.attr('stroke-width', (d: any) => {
-				// Thicker outline for prison
+				// Thicker outline for larger text
 				if (d.data.type === 'prison') {
 					return '4px';
 				}
-				if (d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
-					return '3px';
+				if (d.data.type === 'houseblock') {
+					return '4px'; // Thicker for larger text
+				}
+				if (d.data.type === 'wing') {
+					return '5px'; // Even thicker for 3x text
+				}
+				if (d.data.type === 'landing') {
+					return '6px'; // Thickest for 5x text
 				}
 				return '0';
 			})
@@ -273,6 +288,26 @@
 				const text = d3.select(this);
 				const textContent = d.data.name;
 				const maxWidth = d.r * 1.8;
+
+				// For landing type, add the number/letter as a second line (larger)
+				if (d.data.type === 'landing') {
+					const parts = textContent.split(' ');
+					if (parts.length > 1) {
+						// Add tspan for the number/letter (4x bigger)
+						const numberSize = Math.min(d.r * 1.33, 80);
+						text.append('tspan')
+							.attr('x', 0)
+							.attr('dy', numberSize * 1.2) // Position below first line
+							.attr('font-size', numberSize + 'px')
+							.attr('font-weight', 'bold')
+							.attr('fill', '#000')
+							.attr('stroke', '#fff')
+							.attr('stroke-width', '4px')
+							.attr('paint-order', 'stroke')
+							.text(parts.slice(1).join(' ')); // e.g., "A1"
+					}
+					return; // Skip truncation for landing
+				}
 
 				// Truncate if too long
 				if (this.getComputedTextLength() > maxWidth) {
