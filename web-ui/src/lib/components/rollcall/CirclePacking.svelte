@@ -61,7 +61,7 @@
 
 		// Initialize focus and view
 		focus = root;
-		view = [focus.x, focus.y, focus.r * 2];
+		view = [focus.x, focus.y, focus.r * 2.6];
 
 		// Helper function to zoom to a specific view
 		function zoomTo(v: [number, number, number]) {
@@ -84,7 +84,7 @@
 			const transition = svg.transition()
 				.duration(duration)
 				.tween('zoom', () => {
-					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
+					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2.6]);
 					return (t: number) => zoomTo(i(t));
 				});
 
@@ -155,7 +155,11 @@
 			.style('fill-opacity', (d: any) => d.parent === root ? 1 : 0)
 			.style('display', (d: any) => d.parent === root ? 'inline' : 'none')
 			.attr('dy', (d: any) => {
-				// Position houseblock labels near the top (but lower than wing)
+				// Position prison labels at the very top
+				if (d.data.type === 'prison') {
+					return -d.r + 25; // At the top of the circle
+				}
+				// Position houseblock labels near the top (but lower than prison)
 				if (d.data.type === 'houseblock') {
 					return -d.r + 40; // Move down a bit more
 				}
@@ -177,34 +181,43 @@
 				return d.data.name;
 			})
 			.attr('font-size', (d: any) => {
-				// Larger font for houseblock, wing, and landing
-				if (d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
+				// Largest font for prison
+				if (d.data.type === 'prison') {
+					return Math.min(d.r / 3, 24) + 'px';
+				}
+				// Larger font for houseblock and wing
+				if (d.data.type === 'houseblock' || d.data.type === 'wing') {
 					return Math.min(d.r / 4, 18) + 'px';
+				}
+				// Even larger font for landing (60 inmates, needs to be prominent)
+				if (d.data.type === 'landing') {
+					return Math.min(d.r / 3, 20) + 'px';
 				}
 				return Math.min(d.r / 3, 14) + 'px';
 			})
 			.attr('fill', (d: any) => {
-				// Black text for houseblock, wing, and landing; white for others
-				if (d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
+				// Black text with white outline for prison, houseblock, wing, and landing; white for others
+				if (d.data.type === 'prison' || d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
 					return '#000';
 				}
 				return '#fff';
 			})
 			.attr('font-weight', (d: any) => {
-				// Bold for houseblock, wing, and landing
-				if (d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
-					return 'bold';
-				}
+				// Bold for all hierarchy levels
 				return 'bold';
 			})
 			.attr('stroke', (d: any) => {
-				// White outline for houseblock, wing, and landing
-				if (d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
+				// White outline for prison, houseblock, wing, and landing
+				if (d.data.type === 'prison' || d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
 					return '#fff';
 				}
 				return 'none';
 			})
 			.attr('stroke-width', (d: any) => {
+				// Thicker outline for prison
+				if (d.data.type === 'prison') {
+					return '4px';
+				}
 				if (d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
 					return '3px';
 				}
@@ -269,7 +282,7 @@
 		});
 
 		// Initialize zoom to root
-		zoomTo([root.x, root.y, root.r * 2]);
+		zoomTo([root.x, root.y, root.r * 2.6]);
 	}
 
 	function handleZoomOutInternal() {

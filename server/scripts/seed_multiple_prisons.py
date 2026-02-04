@@ -32,66 +32,79 @@ def create_location(conn, name, loc_type, parent_id=None, capacity=1, floor=0, b
     return loc_id
 
 
-def seed_prison(conn, prison_name, x_offset=0):
+def seed_prison(conn, prison_name, cells_per_landing, x_offset=0):
     """
     Seed a single prison with COMPLETE hierarchy including ALL facility types.
 
     Structure:
     - Prison
-      - Houseblock 1 (residential with wings/landings/cells)
-      - Houseblock 2 (residential with wings/landings/cells)
+      - 3 Houseblocks (residential with wings/landings/cells)
       - Kitchen, Workshops, Visits, Healthcare, etc. (facilities)
 
-    Total: 80 prisoners per prison (40 per houseblock)
+    Each prison has:
+    - 3 Houseblocks
+    - 3 Wings per houseblock (9 wings total)
+    - 3 Landings per wing (27 landings total)
+    - Variable cells per landing based on prison size
     """
     print(f"\n📍 Creating {prison_name}...")
+
+    # Calculate total capacity
+    total_capacity = 3 * 3 * 3 * cells_per_landing * 2  # 3HB × 3W × 3L × cells × 2 inmates
 
     # Create prison
     prison_id = create_location(
         conn, prison_name, "prison",
-        capacity=80, building=prison_name, x=x_offset, y=0
+        capacity=total_capacity, building=prison_name, x=x_offset, y=0
     )
-    print(f"  ✅ Created prison: {prison_name}")
+    print(f"  ✅ Created prison: {prison_name} (capacity: {total_capacity})")
 
     # ===== HOUSEBLOCKS (Residential) =====
-    houseblock_names = ["Houseblock 1", "Houseblock 2"]
+    houseblock_names = ["Houseblock 1", "Houseblock 2", "Houseblock 3"]
     wing_configs = [
-        ("A Wing", "B Wing"),  # Houseblock 1 wings
-        ("C Wing", "D Wing"),  # Houseblock 2 wings
+        ("A Wing", "B Wing", "C Wing"),      # Houseblock 1 wings
+        ("D Wing", "E Wing", "F Wing"),      # Houseblock 2 wings
+        ("G Wing", "H Wing", "I Wing"),      # Houseblock 3 wings
     ]
+
+    hb_capacity = 3 * 3 * cells_per_landing * 2  # 3W × 3L × cells × 2 inmates
 
     for hb_idx, hb_name in enumerate(houseblock_names):
         # Create houseblock
         hb_id = create_location(
             conn, hb_name, "houseblock",
             parent_id=prison_id,
-            capacity=40, building=prison_name,
+            capacity=hb_capacity, building=prison_name,
             x=x_offset + hb_idx * 200, y=50
         )
         print(f"    ✅ Created {hb_name}")
 
-        # Create wings in this houseblock
+        wing_capacity = 3 * cells_per_landing * 2  # 3L × cells × 2 inmates
+
+        # Create 3 wings in this houseblock
         for wing_name in wing_configs[hb_idx]:
             wing_id = create_location(
                 conn, wing_name, "wing",
                 parent_id=hb_id,
-                capacity=20, building=prison_name
+                capacity=wing_capacity, building=prison_name
             )
             print(f"      ✅ Created {wing_name}")
 
-            # Create 2 landings per wing
-            for landing_num in range(1, 3):
+            landing_capacity = cells_per_landing * 2  # cells × 2 inmates
+
+            # Create 3 landings per wing
+            for landing_num in range(1, 4):
                 landing_name = f"Landing {landing_num}"
                 landing_id = create_location(
                     conn, landing_name, "landing",
                     parent_id=wing_id,
-                    capacity=10, floor=landing_num - 1, building=prison_name
+                    capacity=landing_capacity, floor=landing_num - 1, building=prison_name
                 )
                 print(f"        ✅ Created {landing_name}")
 
-                # Create 5 cells per landing
+                # Create cells for this landing
                 wing_letter = wing_name[0]
-                for cell_num in range(1, 6):
+                for cell_num in range(1, cells_per_landing + 1):
                     cell_name = f"{wing_letter}{landing_num}-{cell_num:02d}"
                     create_location(
                         conn, cell_name, "cell",
@@ -99,7 +112,7 @@ def seed_prison(conn, prison_name, x_offset=0):
                         capacity=2, floor=landing_num - 1, building=prison_name
                     )
 
-                print(f"          Created 5 cells (10 capacity)")
+                print(f"          Created {cells_per_landing} cells ({landing_capacity} capacity)")
 
     # ===== FACILITIES (Non-residential - same level as houseblocks) =====
     print(f"  📦 Creating facilities...")
@@ -150,23 +163,34 @@ def seed_multiple_prisons():
         cursor.execute("DELETE FROM locations")
         conn.commit()
 
-        # Create 3 prisons
+        # Create 3 prisons with different sizes
+        # Oakwood: 1800 capacity (33 cells/landing)
+        # Nottingham: 900 capacity (17 cells/landing) - half of Oakwood
+        # Birmingham: 450 capacity (8 cells/landing) - quarter of Oakwood
         prisons = [
-            ("HMP Oakwood", 0),
-            ("HMP Nottingham", 500),
-            ("HMP Birmingham", 1000),
+            ("HMP Oakwood", 33, 0),         # 3×3×3×33×2 = 1782 inmates
+            ("HMP Nottingham", 17, 500),    # 3×3×3×17×2 = 918 inmates
+            ("HMP Birmingham", 8, 1000),    # 3×3×3×8×2 = 432 inmates
         ]
 
         prison_ids = []
-        for prison_name, x_offset in prisons:
-            prison_id = seed_prison(conn, prison_name, x_offset)
+        for prison_name, cells_per_landing, x_offset in prisons:
+            prison_id = seed_prison(conn, prison_name, cells_per_landing, x_offset)
             prison_ids.append(prison_id)
 
         # Commit all changes
         conn.commit()
         print(f"\n✅ Successfully created {len(prisons)} prisons")
-        print(f"   Total capacity: {len(prisons) * 80} prisoners")
-        print(f"   Total cells: {len(prisons) * 40}")
+
+        # Count total capacity
+        cursor.execute("SELECT SUM(capacity) FROM locations WHERE type = 'prison'")
+        total_capacity = cursor.fetchone()[0]
+        print(f"   Total capacity: {total_capacity} prisoners")
+
+        # Count cells
+        cursor.execute("SELECT COUNT(*) FROM locations WHERE type = 'cell'")
+        total_cells = cursor.fetchone()[0]
+        print(f"   Total cells: {total_cells}")
 
         # Count locations by type
         cursor.execute("SELECT type, COUNT(*) FROM locations GROUP BY type ORDER BY type")
