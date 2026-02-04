@@ -14,9 +14,16 @@
 	let canZoomOut = false;
 	let focus: any = null;
 	let view: [number, number, number] = [0, 0, 0];
+	let root: any = null; // Will hold hierarchy root (needed for zoom limits)
+	let handleManualZoomFn: ((direction: 'in' | 'out') => void) | null = null;
+	let zoomFn: ((d: any, event?: MouseEvent) => void) | null = null;
 
 	// Update canZoomOut based on focus
 	$: canZoomOut = focus && focus.parent;
+
+	// Computed values for manual zoom button states
+	$: canZoomIn = focus && view[2] > focus.r * 1.5;
+	$: canZoomOut_manual = root && view[2] < root.r * 2.6;
 
 	const colorMap: Record<string, string> = {
 		grey: '#6B7280',   // gray-500
@@ -32,8 +39,13 @@
 		d3.select(container).selectAll('*').remove();
 		d3.selectAll('.circle-packing-tooltip').remove();
 
+		// Local variables to store references needed by zoom controls
+		let svg: any;
+		let node: any;
+		let label: any;
+
 		// Create SVG with centered viewBox
-		const svg = d3.select(container)
+		svg = d3.select(container)
 			.append('svg')
 			.attr('viewBox', `-${width / 2} -${height / 2} ${width} ${height}`)
 			.attr('width', width)
@@ -49,7 +61,7 @@
 			});
 
 		// Create hierarchy and pack layout
-		const root = d3.hierarchy(data)
+		root = d3.hierarchy(data)
 			.sum(d => d.value || 0)
 			.sort((a, b) => (b.value || 0) - (a.value || 0));
 
@@ -68,9 +80,11 @@
 			const k = width / v[2];
 			view = v;
 
-			label.attr('transform', (d: any) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`);
-			node.attr('transform', (d: any) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`);
-			node.attr('r', (d: any) => d.r * k);
+			if (label) label.attr('transform', (d: any) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`);
+			if (node) {
+				node.attr('transform', (d: any) => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`);
+				node.attr('r', (d: any) => d.r * k);
+			}
 		}
 
 		// Zoom function with smooth transition
@@ -104,6 +118,31 @@
 				});
 		}
 
+		// Manual zoom function
+		function handleManualZoom(direction: 'in' | 'out') {
+			if (!focus || !svg) return;
+
+			// Calculate new diameter
+			const zoomFactor = direction === 'in' ? 0.8 : 1.25; // 20% change
+			let newDiameter = view[2] * zoomFactor;
+
+			// Clamp to limits
+			const minDiameter = focus.r * 1.5;
+			const maxDiameter = root.r * 2.6;
+			newDiameter = Math.max(minDiameter, Math.min(maxDiameter, newDiameter));
+
+			// Keep same center, change diameter
+			const newView: [number, number, number] = [view[0], view[1], newDiameter];
+
+			// Animate the zoom
+			svg.transition()
+				.duration(300)
+				.tween('zoom', () => {
+					const i = d3.interpolateZoom(view, newView);
+					return (t: number) => zoomTo(i(t));
+				});
+		}
+
 		// Create tooltip first so we can reference it in event handlers
 		const tooltip = d3.select('body')
 			.append('div')
@@ -126,7 +165,7 @@
 			.attr('text-anchor', 'middle');
 
 		// Create circles for all nodes (skip root)
-		const node = nodeGroup.selectAll('circle')
+		node = nodeGroup.selectAll('circle')
 			.data(root.descendants().slice(1))
 			.join('circle')
 			.attr('r', (d: any) => d.r)
@@ -148,7 +187,7 @@
 			});
 
 		// Create labels for all nodes
-		const label = labelGroup.selectAll('text')
+		label = labelGroup.selectAll('text')
 			.data(root.descendants())
 			.join('text')
 			.attr('text-anchor', 'middle')
@@ -283,11 +322,15 @@
 
 		// Initialize zoom to root
 		zoomTo([root.x, root.y, root.r * 2.6]);
+
+		// Expose functions to component template
+		handleManualZoomFn = handleManualZoom;
+		zoomFn = zoom;
 	}
 
 	function handleZoomOutInternal() {
-		if (focus && focus.parent) {
-			zoom(focus.parent);
+		if (focus && focus.parent && zoomFn) {
+			zoomFn(focus.parent);
 		}
 	}
 
@@ -328,6 +371,26 @@
 			<div class="text-sm font-semibold text-gray-900">{focus.data.name}</div>
 		</div>
 	{/if}
+
+	<!-- Manual Zoom Controls -->
+	<div class="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+		<button
+			on:click={() => handleManualZoomFn && handleManualZoomFn('in')}
+			disabled={!canZoomIn}
+			class="w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-lg shadow-md text-lg font-bold text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			title="Zoom In"
+		>
+			+
+		</button>
+		<button
+			on:click={() => handleManualZoomFn && handleManualZoomFn('out')}
+			disabled={!canZoomOut_manual}
+			class="w-10 h-10 bg-white hover:bg-gray-100 border border-gray-300 rounded-lg shadow-md text-lg font-bold text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			title="Zoom Out"
+		>
+			−
+		</button>
+	</div>
 
 	<div bind:this={container} class="circle-packing-container w-full h-full"></div>
 </div>
