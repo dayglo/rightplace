@@ -73,7 +73,7 @@
 
 		// Initialize focus and view (default zoomed out more for better overview)
 		focus = root;
-		view = [focus.x, focus.y, focus.r * 4.5];
+		view = [focus.x, focus.y, focus.r * 4.0];
 
 		// Helper function to zoom to a specific view
 		function zoomTo(v: [number, number, number]) {
@@ -98,7 +98,7 @@
 			const transition = svg.transition()
 				.duration(duration)
 				.tween('zoom', () => {
-					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 4.5]);
+					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 4.0]);
 					return (t: number) => zoomTo(i(t));
 				});
 
@@ -321,7 +321,7 @@
 		});
 
 		// Initialize zoom to root (zoomed out for better overview)
-		zoomTo([root.x, root.y, root.r * 4.5]);
+		zoomTo([root.x, root.y, root.r * 4.0]);
 
 		// Expose functions to component template
 		handleManualZoomFn = handleManualZoom;
