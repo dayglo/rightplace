@@ -23,7 +23,7 @@
 
 	// Computed values for manual zoom button states
 	$: canZoomIn = focus && view[2] > focus.r * 1.5;
-	$: canZoomOut_manual = root && view[2] < root.r * 2.6;
+	$: canZoomOut_manual = root && view[2] < root.r * 6.5;
 
 	const colorMap: Record<string, string> = {
 		grey: '#6B7280',   // gray-500
@@ -71,9 +71,9 @@
 
 		pack(root as any);
 
-		// Initialize focus and view
+		// Initialize focus and view (default zoomed out more for better overview)
 		focus = root;
-		view = [focus.x, focus.y, focus.r * 2.6];
+		view = [focus.x, focus.y, focus.r * 4.5];
 
 		// Helper function to zoom to a specific view
 		function zoomTo(v: [number, number, number]) {
@@ -98,7 +98,7 @@
 			const transition = svg.transition()
 				.duration(duration)
 				.tween('zoom', () => {
-					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2.6]);
+					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 4.5]);
 					return (t: number) => zoomTo(i(t));
 				});
 
@@ -128,7 +128,7 @@
 
 			// Clamp to limits
 			const minDiameter = focus.r * 1.5;
-			const maxDiameter = root.r * 2.6;
+			const maxDiameter = root.r * 6.5;
 			newDiameter = Math.max(minDiameter, Math.min(maxDiameter, newDiameter));
 
 			// Keep same center, change diameter
@@ -320,8 +320,8 @@
 			tooltip.style('opacity', 0);
 		});
 
-		// Initialize zoom to root
-		zoomTo([root.x, root.y, root.r * 2.6]);
+		// Initialize zoom to root (zoomed out for better overview)
+		zoomTo([root.x, root.y, root.r * 4.5]);
 
 		// Expose functions to component template
 		handleManualZoomFn = handleManualZoom;
