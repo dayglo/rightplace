@@ -347,11 +347,13 @@
 				if (d.data.type === 'landing') {
 					const parts = textContent.split(' ');
 					if (parts.length > 1) {
+						// Get the "Landing" text size for proper spacing
+						const landingSize = Math.min(d.r * 1.67, 100);
 						// Add tspan for the number/letter (4x bigger)
 						const numberSize = Math.min(d.r * 4, 400); // 4x the base landing size
 						text.append('tspan')
 							.attr('x', 0)
-							.attr('dy', numberSize * 0.6) // Position below first line
+							.attr('dy', landingSize * 1.3) // Position below "Landing" text
 							.attr('font-size', numberSize + 'px')
 							.attr('font-weight', 'bold')
 							.attr('fill', '#000')
