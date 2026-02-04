@@ -205,15 +205,15 @@
 				}
 				// Position houseblock labels near the top (but lower than prison)
 				if (d.data.type === 'houseblock') {
-					return -d.r + 60; // Move down more for larger text
+					return -d.r + 30; // Higher up for two-line layout
 				}
 				// Position wing labels near the top
 				if (d.data.type === 'wing') {
-					return -d.r + 60; // Near the top, adjusted for larger text
+					return -d.r + 30; // Higher up for two-line layout
 				}
-				// Position landing labels higher to make room for two-line text
+				// Position landing labels near the very top for two-line text
 				if (d.data.type === 'landing') {
-					return -d.r + 80; // Higher position for two-line layout
+					return -d.r + 20; // Even higher for two-line layout
 				}
 				return '0.3em'; // Center for other types
 			})
@@ -222,11 +222,25 @@
 				if (d.r < 20) return '';
 				// Don't render the root/current level label (we have it in top right)
 				if (d.depth === 0) return '';
-				// For landing, split the text - show first part, add second part as tspan later
+
+				// For landing, split: "Landing A1" -> show "Landing", add "A1" as tspan
 				if (d.data.type === 'landing') {
 					const parts = d.data.name.split(' ');
 					return parts[0]; // "Landing"
 				}
+
+				// For houseblock, split: "Houseblock 1" -> show "Houseblock", add "1" as tspan
+				if (d.data.type === 'houseblock') {
+					const parts = d.data.name.split(' ');
+					return parts[0]; // "Houseblock"
+				}
+
+				// For wing, split: "A Wing" -> show "A", add "Wing" as tspan
+				if (d.data.type === 'wing') {
+					const parts = d.data.name.split(' ');
+					return parts[0]; // "A"
+				}
+
 				return d.data.name;
 			})
 			.attr('font-size', (d: any) => {
@@ -234,13 +248,13 @@
 				if (d.data.type === 'prison') {
 					return Math.min(d.r / 3, 24) + 'px';
 				}
-				// Houseblock: 2x bigger
+				// Houseblock: 2x bigger (for "Houseblock" text)
 				if (d.data.type === 'houseblock') {
 					return Math.min(d.r / 2, 36) + 'px';
 				}
-				// Wing: 3x bigger
+				// Wing: 4x bigger (for the letter, e.g., "A")
 				if (d.data.type === 'wing') {
-					return Math.min(d.r * 0.75, 54) + 'px';
+					return Math.min(d.r * 1.2, 150) + 'px';
 				}
 				// Landing: 5x bigger (for "Landing" text)
 				if (d.data.type === 'landing') {
@@ -289,24 +303,64 @@
 				const textContent = d.data.name;
 				const maxWidth = d.r * 1.8;
 
-				// For landing type, add the number/letter as a second line (larger)
-				if (d.data.type === 'landing') {
+				// For houseblock: "Houseblock 1" -> show "Houseblock", then "1" bigger below
+				if (d.data.type === 'houseblock') {
 					const parts = textContent.split(' ');
 					if (parts.length > 1) {
-						// Add tspan for the number/letter (4x bigger)
-						const numberSize = Math.min(d.r * 1.33, 80);
+						// Add tspan for the number (4x bigger)
+						const numberSize = Math.min(d.r * 1.5, 144); // 4x the base houseblock size
 						text.append('tspan')
 							.attr('x', 0)
-							.attr('dy', numberSize * 1.2) // Position below first line
+							.attr('dy', numberSize * 0.8) // Position below first line
 							.attr('font-size', numberSize + 'px')
 							.attr('font-weight', 'bold')
 							.attr('fill', '#000')
 							.attr('stroke', '#fff')
-							.attr('stroke-width', '4px')
+							.attr('stroke-width', '6px')
+							.attr('paint-order', 'stroke')
+							.text(parts.slice(1).join(' ')); // e.g., "1"
+					}
+					return; // Skip truncation
+				}
+
+				// For wing: "A Wing" -> show "A", then "Wing" below (smaller)
+				if (d.data.type === 'wing') {
+					const parts = textContent.split(' ');
+					if (parts.length > 1) {
+						// Add tspan for "Wing" text (smaller than the letter)
+						const wingSize = Math.min(d.r * 0.75, 54); // Same as first line wing text
+						text.append('tspan')
+							.attr('x', 0)
+							.attr('dy', wingSize * 1.2) // Position below first line
+							.attr('font-size', wingSize + 'px')
+							.attr('font-weight', 'bold')
+							.attr('fill', '#000')
+							.attr('stroke', '#fff')
+							.attr('stroke-width', '5px')
+							.attr('paint-order', 'stroke')
+							.text(parts.slice(1).join(' ')); // e.g., "Wing"
+					}
+					return; // Skip truncation
+				}
+
+				// For landing: "Landing A1" -> show "Landing", then "A1" bigger below
+				if (d.data.type === 'landing') {
+					const parts = textContent.split(' ');
+					if (parts.length > 1) {
+						// Add tspan for the number/letter (4x bigger)
+						const numberSize = Math.min(d.r * 4, 400); // 4x the base landing size
+						text.append('tspan')
+							.attr('x', 0)
+							.attr('dy', numberSize * 0.6) // Position below first line
+							.attr('font-size', numberSize + 'px')
+							.attr('font-weight', 'bold')
+							.attr('fill', '#000')
+							.attr('stroke', '#fff')
+							.attr('stroke-width', '10px')
 							.attr('paint-order', 'stroke')
 							.text(parts.slice(1).join(' ')); // e.g., "A1"
 					}
-					return; // Skip truncation for landing
+					return; // Skip truncation
 				}
 
 				// Truncate if too long
