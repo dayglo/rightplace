@@ -23,13 +23,26 @@ if [ ! -z "$1" ]; then
     BACKEND_PORT="$1"
 fi
 
-# Kill any existing uvicorn processes on our port
+# Kill any existing uvicorn processes on our port and wait until port is free
 echo "Checking for existing backend server on port $BACKEND_PORT..."
-EXISTING_PID=$(fuser $BACKEND_PORT/tcp 2>/dev/null | awk '{print $1}')
-if [ ! -z "$EXISTING_PID" ]; then
-    echo "Killing existing server (PID: $EXISTING_PID)"
-    kill -9 $EXISTING_PID
-    sleep 1
+if fuser $BACKEND_PORT/tcp >/dev/null 2>&1; then
+    echo "Killing all processes on port $BACKEND_PORT..."
+    fuser -k $BACKEND_PORT/tcp >/dev/null 2>&1
+    
+    # Wait until port is actually free (max 10 seconds)
+    echo "Waiting for port $BACKEND_PORT to be released..."
+    for i in {1..20}; do
+        if ! fuser $BACKEND_PORT/tcp >/dev/null 2>&1; then
+            echo "Port $BACKEND_PORT is now free"
+            break
+        fi
+        # Keep killing any lingering processes
+        fuser -k $BACKEND_PORT/tcp >/dev/null 2>&1
+        if [ $i -eq 20 ]; then
+            echo "Warning: Port $BACKEND_PORT still in use after 10 seconds"
+        fi
+        sleep 0.5
+    done
 fi
 
 # Determine which venv to use

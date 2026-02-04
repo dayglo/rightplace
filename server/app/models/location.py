@@ -12,6 +12,7 @@ class LocationType(str, Enum):
     """Types of locations in the facility (UK prison terminology)."""
 
     # Hierarchical accommodation
+    PRISON = "prison"               # Prison establishment (e.g., "HMP Oakwood")
     HOUSEBLOCK = "houseblock"      # Top-level building (e.g., "Houseblock 1")
     WING = "wing"                   # Section within houseblock (e.g., "A Wing")
     LANDING = "landing"             # Floor within wing (e.g., "1s", "2s", "3s")

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prison Roll Call - Customer Presentation</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      background: var(--gray-100);
+      padding: var(--space-2xl);
+      overflow: auto;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: var(--space-3xl);
+    }
+
+    .header h1 {
+      font-size: 4rem;
+      color: var(--gray-900);
+      margin-bottom: var(--space-md);
+    }
+
+    .header p {
+      font-size: 1.5rem;
+      color: var(--gray-600);
+    }
+
+    .slide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: var(--space-xl);
+    }
+
+    .slide-card {
+      background: white;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: block;
+    }
+
+    .slide-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .slide-preview {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      position: relative;
+    }
+
+    .slide-preview.white { background: var(--gray-200); }
+    .slide-preview.gradient-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .slide-preview.gradient-green { background: linear-gradient(135deg, #0f766e 0%, #059669 100%); }
+    .slide-preview.dark { background: var(--gray-900); }
+
+    .slide-number {
+      position: absolute;
+      top: var(--space-sm);
+      right: var(--space-sm);
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--gray-900);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .slide-info {
+      padding: var(--space-lg);
+    }
+
+    .slide-info h3 {
+      font-size: 1.5rem;
+      color: var(--gray-900);
+      margin-bottom: var(--space-xs);
+    }
+
+    .slide-info p {
+      font-size: 1rem;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-top: var(--space-sm);
+    }
+
+    .actions {
+      margin-top: var(--space-2xl);
+      text-align: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-md) var(--space-xl);
+      border-radius: var(--radius-lg);
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn.primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn.primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo" style="justify-content: center; color: var(--gray-900); margin-bottom: var(--space-lg);">
+        <div class="logo-icon">🔒</div>
+        Prison Roll Call
+      </div>
+      <h1>Customer Presentation</h1>
+      <p>Professional slide deck for non-technical stakeholders</p>
+      <div style="margin-top: var(--space-md);">
+        <span class="badge success">12 Slides</span>
+        <span class="badge info" style="margin-left: var(--space-sm);">1920x1080</span>
+        <span class="badge" style="background: #fef3c7; color: #92400e; margin-left: var(--space-sm);">Ready to Present</span>
+      </div>
+    </div>
+
+    <div class="slide-grid">
+      <!-- Slide 1 -->
+      <a href="slide-01-cover.html" class="slide-card">
+        <div class="slide-preview gradient-blue">
+          <span>🔒</span>
+          <div class="slide-number">1</div>
+        </div>
+        <div class="slide-info">
+          <h3>Cover Slide</h3>
+          <p>Introduction with key metrics: 60% faster, 99%+ accuracy, 100% audit compliance</p>
+          <span class="badge" style="background: #dbeafe; color: #1e40af;">Gradient Blue</span>
+        </div>
+      </a>
+
+      <!-- Slide 2 -->
+      <a href="slide-02-problem.html" class="slide-card">
+        <div class="slide-preview white">
+          <span>📋</span>
+          <div class="slide-number">2</div>
+        </div>
+        <div class="slide-info">
+          <h3>Before/After Comparison</h3>
+          <p>Traditional roll call vs modern face recognition - side-by-side with VS divider</p>
+          <span class="badge" style="background: #f3f4f6; color: #374151;">White</span>
+        </div>
+      </a>
+
+      <!-- Slide 3 -->
+      <a href="slide-03-journey.html" class="slide-card">
+        <div class="slide-preview white">
+          <span>🚶</span>
+          <div class="slide-number">3</div>
+        </div>
+        <div class="slide-info">
+          <h3>User Journey Timeline</h3>
+          <p>Follow Officer Martinez through a complete morning roll call (6:00 AM - 6:23 AM)</p>
+          <span class="badge" style="background: #f3f4f6; color: #374151;">White</span>
+        </div>
+      </a>
+
+      <!-- Slide 4 -->
+      <a href="slide-04-benefits.html" class="slide-card">
+        <div class="slide-preview white">
+          <span>💰</span>
+          <div class="slide-number">4</div>
+        </div>
+        <div class="slide-info">
+          <h3>Benefits Dashboard</h3>
+          <p>ROI metrics: time savings, cost reduction, accuracy, compliance, security, satisfaction</p>
+          <span class="badge" style="background: #f3f4f6; color: #374151;">White</span>
+        </div>
+      </a>
+
+      <!-- Slide 5 -->
+      <a href="slide-05-security.html" class="slide-card">
+        <div class="slide-preview gradient-green">
+          <span>🔒</span>
+          <div class="slide-number">5</div>
+        </div>
+        <div class="slide-info">
+          <h3>Security & Privacy</h3>
+          <p>Air-gapped, AES-256 encrypted, no cloud, privacy by design, regulatory compliance</p>
+          <span class="badge success">Gradient Green</span>
+        </div>
+      </a>
+
+      <!-- Slide 6 -->
+      <a href="slide-06-setup.html" class="slide-card">
+        <div class="slide-preview white">
+          <span>💻</span>
+          <div class="slide-number">6</div>
+        </div>
+        <div class="slide-info">
+          <h3>Physical Setup</h3>
+          <p>Simple deployment: laptop server, WiFi hotspot, officer devices - setup in 2 hours</p>
+          <span class="badge" style="background: #f3f4f6; color: #374151;">White</span>
+        </div>
+      </a>
+
+      <!-- Slide 7 -->
+      <a href="slide-07-confidence.html" class="slide-card">
+        <div class="slide-preview white">
+          <span>🎯</span>
+          <div class="slide-number">7</div>
+        </div>
+        <div class="slide-info">
+          <h3>Confidence System</h3>
+          <p>Three-tier verification: High (92%+), Medium (75-92%), Low (<75%) with clear guidance</p>
+          <span class="badge" style="background: #f3f4f6; color: #374151;">White</span>
+        </div>
+      </a>
+
+      <!-- Slide 8 -->
+      <a href="slide-08-screens.html" class="slide-card">
+        <div class="slide-preview dark">
+          <span>📱</span>
+          <div class="slide-number">8</div>
+        </div>
+        <div class="slide-info">
+          <h3>Screen Showcase</h3>
+          <p>UI mockups: dashboard, route display, verification screen, completion report</p>
+          <span class="badge" style="background: #1f2937; color: white;">Dark</span>
+        </div>
+      </a>
+
+      <!-- Slide 9 -->
+      <a href="slide-09-timeline.html" class="slide-card">
+        <div class="slide-preview white">
+          <span>📦</span>
+          <div class="slide-number">9</div>
+        </div>
+        <div class="slide-info">
+          <h3>Implementation Timeline</h3>
+          <p>From purchase to production in 4 weeks: setup, enrollment, training, pilot, launch</p>
+          <span class="badge" style="background: #f3f4f6; color: #374151;">White</span>
+        </div>
+      </a>
+
+      <!-- Slide 10 -->
+      <a href="slide-10-support.html" class="slide-card">
+        <div class="slide-preview gradient-blue">
+          <span>👨‍🏫</span>
+          <div class="slide-number">10</div>
+        </div>
+        <div class="slide-info">
+          <h3>Support & Training</h3>
+          <p>Comprehensive package: on-site training, 24/7 support, documentation, updates, maintenance</p>
+          <span class="badge" style="background: #dbeafe; color: #1e40af;">Gradient Blue</span>
+        </div>
+      </a>
+
+      <!-- Slide 11 -->
+      <a href="slide-11-casestudy.html" class="slide-card">
+        <div class="slide-preview white">
+          <span>📊</span>
+          <div class="slide-number">11</div>
+        </div>
+        <div class="slide-info">
+          <h3>Case Study Results</h3>
+          <p>90-day pilot: 62% time reduction, 99.4% accuracy, $38K savings, 94% officer satisfaction</p>
+          <span class="badge" style="background: #f3f4f6; color: #374151;">White</span>
+        </div>
+      </a>
+
+      <!-- Slide 12 -->
+      <a href="slide-12-nextsteps.html" class="slide-card">
+        <div class="slide-preview gradient-blue">
+          <span>📅</span>
+          <div class="slide-number">12</div>
+        </div>
+        <div class="slide-info">
+          <h3>Next Steps (CTA)</h3>
+          <p>Call to action: schedule demo, start pilot, full deployment - with contact information</p>
+          <span class="badge" style="background: #dbeafe; color: #1e40af;">Gradient Blue</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="actions">
+      <a href="slide-01-cover.html" class="btn primary">
+        ▶️ Start Presentation
+      </a>
+    </div>
+
+    <div style="margin-top: var(--space-3xl); text-align: center; color: var(--gray-600);">
+      <p style="font-size: 1rem;">
+        <strong>Tip:</strong> Press F11 for fullscreen presentation mode<br>
+        Use arrow keys or click to navigate between slides
+      </p>
+    </div>
+  </div>
+</body>
+</html>

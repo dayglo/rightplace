@@ -2,6 +2,10 @@
 # Start the Prison Roll Call web UI server
 # Supports multi-worktree port configuration via .worktree.env
 
+# Source nvm if available (for npm/pnpm access in non-interactive shells)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 LOG_DIR="$PROJECT_ROOT/log"
@@ -27,11 +31,24 @@ fi
 
 # Kill any existing SvelteKit dev server processes on our port
 echo "Checking for existing web UI server on port $FRONTEND_PORT..."
-EXISTING_PID=$(fuser $FRONTEND_PORT/tcp 2>/dev/null | awk '{print $1}')
-if [ ! -z "$EXISTING_PID" ]; then
-    echo "Killing existing web UI server (PID: $EXISTING_PID)"
-    kill -9 $EXISTING_PID
-    sleep 1
+if fuser $FRONTEND_PORT/tcp >/dev/null 2>&1; then
+    echo "Killing all processes on port $FRONTEND_PORT..."
+    fuser -k $FRONTEND_PORT/tcp >/dev/null 2>&1
+    
+    # Wait until port is actually free (max 10 seconds)
+    echo "Waiting for port $FRONTEND_PORT to be released..."
+    for i in {1..20}; do
+        if ! fuser $FRONTEND_PORT/tcp >/dev/null 2>&1; then
+            echo "Port $FRONTEND_PORT is now free"
+            break
+        fi
+        # Keep killing any lingering processes
+        fuser -k $FRONTEND_PORT/tcp >/dev/null 2>&1
+        if [ $i -eq 20 ]; then
+            echo "Warning: Port $FRONTEND_PORT still in use after 10 seconds"
+        fi
+        sleep 0.5
+    done
 fi
 
 # Also kill any orphaned vite/node processes for this specific worktree

@@ -362,6 +362,14 @@
 				</a>
 			{/if}
 
+			<!-- Visualization Link (available for all statuses) -->
+			<a
+				href="/rollcalls/visualization?rollcall_id={data.rollCall.id}"
+				class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium inline-block"
+			>
+				📊 View Visualization
+			</a>
+
 			{#if data.rollCall.status === 'completed'}
 				<button
 					disabled

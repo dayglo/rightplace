@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prison Roll Call - Confidence System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="slide bg-white">
+    <!-- Header -->
+    <div class="slide-header">
+      <div class="caption text-primary">INTELLIGENT VERIFICATION</div>
+      <h2 class="text-gray-900">Three-Tier Confidence System</h2>
+      <p class="subtitle text-gray-600" style="margin-top: var(--space-md);">
+        The system adapts to real-world conditions and provides clear guidance
+      </p>
+    </div>
+
+    <!-- Three Confidence Tiers -->
+    <div class="grid grid-3" style="margin-bottom: var(--space-xl);">
+      <!-- High Confidence -->
+      <div class="card" style="text-align: center; border: 3px solid #059669;">
+        <div style="margin-bottom: var(--space-lg);">
+          <div class="icon-xl" style="margin-bottom: var(--space-md);">🟢</div>
+          <div class="badge success" style="font-size: 1.5rem; padding: var(--space-sm) var(--space-lg);">HIGH CONFIDENCE</div>
+        </div>
+
+        <div class="stat-value" style="color: #059669; margin-bottom: var(--space-md);">92%+</div>
+
+        <h3 class="text-gray-900" style="font-size: 2rem; margin-bottom: var(--space-lg);">Automatic Verification</h3>
+
+        <ul style="list-style: none; text-align: left; display: flex; flex-direction: column; gap: var(--space-md);">
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #059669; font-size: 1.5rem;">✓</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Clear facial match</p>
+          </li>
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #059669; font-size: 1.5rem;">✓</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Optimal lighting conditions</p>
+          </li>
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #059669; font-size: 1.5rem;">✓</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Officer continues immediately</p>
+          </li>
+        </ul>
+
+        <div style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 2px solid var(--gray-200);">
+          <div class="stat-value" style="color: var(--gray-900); font-size: 3rem;">85-90%</div>
+          <div class="stat-label" style="font-size: 1.125rem;">of verifications</div>
+        </div>
+      </div>
+
+      <!-- Medium Confidence -->
+      <div class="card" style="text-align: center; border: 3px solid #f59e0b;">
+        <div style="margin-bottom: var(--space-lg);">
+          <div class="icon-xl" style="margin-bottom: var(--space-md);">🟡</div>
+          <div class="badge warning" style="font-size: 1.5rem; padding: var(--space-sm) var(--space-lg);">MEDIUM CONFIDENCE</div>
+        </div>
+
+        <div class="stat-value" style="color: #f59e0b; margin-bottom: var(--space-md);">75-92%</div>
+
+        <h3 class="text-gray-900" style="font-size: 2rem; margin-bottom: var(--space-lg);">Review Recommended</h3>
+
+        <ul style="list-style: none; text-align: left; display: flex; flex-direction: column; gap: var(--space-md);">
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #f59e0b; font-size: 1.5rem;">⚠</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Partial match detected</p>
+          </li>
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #f59e0b; font-size: 1.5rem;">⚠</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Officer should double-check</p>
+          </li>
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #f59e0b; font-size: 1.5rem;">⚠</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">System flags for manual verification</p>
+          </li>
+        </ul>
+
+        <div style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 2px solid var(--gray-200);">
+          <div class="stat-value" style="color: var(--gray-900); font-size: 3rem;">8-12%</div>
+          <div class="stat-label" style="font-size: 1.125rem;">of verifications</div>
+        </div>
+      </div>
+
+      <!-- Low Confidence -->
+      <div class="card" style="text-align: center; border: 3px solid #dc2626;">
+        <div style="margin-bottom: var(--space-lg);">
+          <div class="icon-xl" style="margin-bottom: var(--space-md);">🔴</div>
+          <div class="badge error" style="font-size: 1.5rem; padding: var(--space-sm) var(--space-lg);">LOW CONFIDENCE</div>
+        </div>
+
+        <div class="stat-value" style="color: #dc2626; margin-bottom: var(--space-md);">&lt;75%</div>
+
+        <h3 class="text-gray-900" style="font-size: 2rem; margin-bottom: var(--space-lg);">Manual Verification Required</h3>
+
+        <ul style="list-style: none; text-align: left; display: flex; flex-direction: column; gap: var(--space-md);">
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #dc2626; font-size: 1.5rem;">✗</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Poor lighting or obstructed view</p>
+          </li>
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #dc2626; font-size: 1.5rem;">✗</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Possible wrong person</p>
+          </li>
+          <li style="display: flex; align-items: start; gap: var(--space-sm);">
+            <span style="color: #dc2626; font-size: 1.5rem;">✗</span>
+            <p style="font-size: 1.125rem; color: var(--gray-700);">Officer must verify ID manually</p>
+          </li>
+        </ul>
+
+        <div style="margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 2px solid var(--gray-200);">
+          <div class="stat-value" style="color: var(--gray-900); font-size: 3rem;">2-3%</div>
+          <div class="stat-label" style="font-size: 1.125rem;">of verifications</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="slide-footer">
+      <div class="logo" style="color: var(--gray-900);">
+        <div class="logo-icon">🔒</div>
+        Prison Roll Call
+      </div>
+      <div class="slide-number text-gray-500">7</div>
+    </div>
+  </div>
+</body>
+</html>

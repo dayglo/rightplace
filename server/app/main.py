@@ -62,7 +62,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
 
     # Register routes
-    from app.api.routes import enrollment, health, inmates, locations, rollcalls, schedules, sync, verification, verifications
+    from app.api.routes import enrollment, health, inmates, locations, rollcalls, rollcall_treemap, schedules, sync, verification, verifications
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
     app.include_router(inmates.router, prefix="/api/v1", tags=["inmates"])
     app.include_router(locations.router, prefix="/api/v1", tags=["locations"])
@@ -70,6 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(verification.router, prefix="/api/v1", tags=["verification"])
     app.include_router(verifications.router, prefix="/api/v1", tags=["verifications"])
     app.include_router(rollcalls.router, prefix="/api/v1", tags=["rollcalls"])
+    app.include_router(rollcall_treemap.router, prefix="/api/v1", tags=["treemap"])
     app.include_router(schedules.router, prefix="/api/v1", tags=["schedules"])
     app.include_router(sync.router, prefix="/api/v1", tags=["sync"])
     

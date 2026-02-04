@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prison Roll Call - Screen Showcase</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Screen Mockup Styles */
+    .screen-mockup {
+      background: var(--gray-800);
+      border: 2px solid var(--gray-700);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+      min-height: 400px;
+    }
+
+    .screen-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      border-bottom: 1px solid var(--gray-700);
+      padding-bottom: var(--space-sm);
+    }
+
+    .screen-icon {
+      font-size: 2.5rem;
+    }
+
+    .screen-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: white;
+    }
+
+    .screen-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .screen-element {
+      background: var(--gray-700);
+      border-radius: var(--radius-sm);
+      padding: var(--space-md);
+      color: var(--gray-300);
+      font-size: 1.125rem;
+      line-height: 1.5;
+    }
+
+    .screen-element.highlight {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .screen-element.success {
+      background: var(--secondary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .camera-feed {
+      background: var(--gray-900);
+      border: 2px dashed var(--gray-600);
+      border-radius: var(--radius-md);
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-500);
+      font-size: 1.25rem;
+    }
+
+    .progress-bar {
+      background: var(--gray-700);
+      border-radius: var(--radius-sm);
+      height: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .button-large {
+      background: var(--secondary);
+      color: white;
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="slide bg-dark">
+    <!-- Header -->
+    <div class="slide-header">
+      <div class="caption text-white">USER INTERFACE</div>
+      <h2 class="text-white">Intuitive Design for Officers</h2>
+      <p class="subtitle text-white" style="opacity: 0.7;">Designed for speed and clarity in high-pressure environments</p>
+    </div>
+
+    <!-- Screen Mockups Grid -->
+    <div class="slide-content">
+      <div class="grid grid-2">
+        <!-- Dashboard Screen -->
+        <div class="screen-mockup">
+          <div class="screen-header">
+            <div class="screen-icon">📊</div>
+            <div class="screen-title">Dashboard</div>
+          </div>
+          <div class="screen-body">
+            <div class="screen-element highlight">
+              🟢 Active Roll Call: C-Block (Started 08:45)
+            </div>
+            <div class="screen-element">
+              ✅ Completed Today: 2 roll calls
+            </div>
+            <div class="screen-element">
+              📈 Average Completion: 18 minutes
+            </div>
+            <div class="screen-element">
+              ⚡ Start New Roll Call
+            </div>
+            <div class="screen-element" style="margin-top: auto; font-size: 1rem; color: var(--gray-400);">
+              Recent: A-Block verified (07:30)<br>
+              Recent: B-Block verified (06:15)
+            </div>
+          </div>
+        </div>
+
+        <!-- Route Display Screen -->
+        <div class="screen-mockup">
+          <div class="screen-header">
+            <div class="screen-icon">🗺️</div>
+            <div class="screen-title">Route Display</div>
+          </div>
+          <div class="screen-body">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 37.5%;">
+                45 / 120 verified
+              </div>
+            </div>
+            <div class="screen-element highlight">
+              ➡️ Next: Cell C-15 (15 steps ahead)
+            </div>
+            <div class="screen-element">
+              Turn right at corridor junction
+            </div>
+            <div class="screen-element">
+              Expected: Martinez, Jose #4521
+            </div>
+            <div style="margin-top: auto; font-size: 1rem; color: var(--gray-400);">
+              <div class="screen-element" style="padding: var(--space-sm); background: var(--gray-900);">
+                🔄 Route optimized for 18-minute completion<br>
+                ⏱️ Estimated time remaining: 11 minutes
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verification Screen -->
+        <div class="screen-mockup">
+          <div class="screen-header">
+            <div class="screen-icon">✅</div>
+            <div class="screen-title">Verification Screen</div>
+          </div>
+          <div class="screen-body">
+            <div class="camera-feed">
+              📷 Live Camera Feed
+            </div>
+            <div class="screen-element" style="background: var(--gray-900); border: 1px solid var(--gray-600);">
+              Expected: <strong style="color: white;">Martinez, Jose #4521</strong><br>
+              Cell: C-15 | Age: 34 | Height: 5'10"
+            </div>
+            <div class="screen-element success" style="font-size: 2rem; text-align: center; padding: var(--space-lg);">
+              ✓ 97% Match
+            </div>
+            <div class="button-large">
+              CONFIRM & CONTINUE →
+            </div>
+          </div>
+        </div>
+
+        <!-- Completion Report Screen -->
+        <div class="screen-mockup">
+          <div class="screen-header">
+            <div class="screen-icon">📈</div>
+            <div class="screen-title">Completion Report</div>
+          </div>
+          <div class="screen-body">
+            <div class="screen-element success">
+              ✅ Roll Call Complete: C-Block
+            </div>
+            <div class="screen-element">
+              📊 Verified: 118 / 120 inmates (98.3%)
+            </div>
+            <div class="screen-element" style="background: var(--warning); color: white; font-weight: 600;">
+              ⚠️ Discrepancies: 2 inmates
+            </div>
+            <div class="screen-element" style="font-size: 1rem;">
+              • Cell C-23: No face detected (empty)<br>
+              • Cell C-47: Low confidence (67%)
+            </div>
+            <div style="margin-top: auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+              <div class="screen-element" style="text-align: center; padding: var(--space-sm);">
+                📄 Export PDF
+              </div>
+              <div class="screen-element" style="text-align: center; padding: var(--space-sm);">
+                🖨️ Print Report
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="slide-footer">
+      <div class="logo">
+        <div class="logo-icon">🔒</div>
+        Prison Roll Call
+      </div>
+      <div class="slide-number text-white">8</div>
+    </div>
+  </div>
+</body>
+</html>

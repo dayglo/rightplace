@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prison Roll Call - User Journey</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="slide bg-white">
+    <!-- Header -->
+    <div class="slide-header">
+      <div class="caption text-primary">HOW IT WORKS</div>
+      <h2 class="text-gray-900">A Typical Morning Roll Call</h2>
+      <p class="text-gray-600" style="font-size: 1.5rem; margin-top: var(--space-sm);">
+        Follow Officer Martinez through a complete verification round
+      </p>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-time">6:00 AM</div>
+        <div class="timeline-marker"></div>
+        <div class="timeline-content">
+          <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+            <span class="icon">📱</span>
+            <h4 class="text-gray-900">Officer Logs In</h4>
+          </div>
+          <p style="font-size: 1.25rem; color: var(--gray-600);">
+            Opens the app on tablet, selects "Morning Roll Call" from dashboard
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-time">6:02 AM</div>
+        <div class="timeline-marker" style="background: var(--secondary);"></div>
+        <div class="timeline-content">
+          <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+            <span class="icon">🗺️</span>
+            <h4 class="text-gray-900">System Generates Route</h4>
+          </div>
+          <p style="font-size: 1.25rem; color: var(--gray-600);">
+            AI calculates optimal path through 3 cell blocks, 120 inmates. Route displayed with turn-by-turn directions.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-time">6:05 AM</div>
+        <div class="timeline-marker" style="background: var(--warning);"></div>
+        <div class="timeline-content">
+          <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+            <span class="icon">🚶</span>
+            <h4 class="text-gray-900">Begins Verification Round</h4>
+          </div>
+          <p style="font-size: 1.25rem; color: var(--gray-600);">
+            Walks to first cell. App shows: "Cell A-101: Expecting Johnson, Marcus #45821"
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-time">6:06 AM</div>
+        <div class="timeline-marker" style="background: var(--secondary);"></div>
+        <div class="timeline-content">
+          <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+            <span class="icon">📸</span>
+            <h4 class="text-gray-900">First Verification</h4>
+          </div>
+          <p style="font-size: 1.25rem; color: var(--gray-600);">
+            Points camera at inmate. <span class="badge success" style="font-size: 1rem;">95% MATCH - VERIFIED</span> appears instantly. Moves to next cell.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-time">6:18 AM</div>
+        <div class="timeline-marker" style="background: var(--accent);"></div>
+        <div class="timeline-content">
+          <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+            <span class="icon">⚠️</span>
+            <h4 class="text-gray-900">Discrepancy Detected</h4>
+          </div>
+          <p style="font-size: 1.25rem; color: var(--gray-600);">
+            Cell A-215: <span class="badge error" style="font-size: 1rem;">72% CONFIDENCE - REVIEW NEEDED</span><br>
+            Officer manually verifies ID, marks as confirmed. System logs the exception.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-time">6:23 AM</div>
+        <div class="timeline-marker" style="background: var(--primary);"></div>
+        <div class="timeline-content">
+          <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm);">
+            <span class="icon">✅</span>
+            <h4 class="text-gray-900">Roll Call Complete</h4>
+          </div>
+          <p style="font-size: 1.25rem; color: var(--gray-600);">
+            119/120 verified automatically, 1 manual review. Report generated and sent to supervisor. <strong>Total time: 18 minutes.</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="slide-footer">
+      <div class="logo" style="color: var(--gray-900);">
+        <div class="logo-icon">🔒</div>
+        Prison Roll Call
+      </div>
+      <div class="slide-number text-gray-500">3</div>
+    </div>
+  </div>
+</body>
+</html>
