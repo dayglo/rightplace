@@ -12,19 +12,39 @@ from pydantic import BaseModel, Field, field_validator
 class ActivityType(str, Enum):
     """Types of scheduled activities in a prison regime."""
 
+    # Base regime activities
     ROLL_CHECK = "roll_check"      # Mandatory headcount
     LOCK_UP = "lock_up"            # In cell, locked
     UNLOCK = "unlock"              # Cell unlocked
     MEAL = "meal"                  # Breakfast/lunch/dinner
+    ASSOCIATION = "association"    # Social time on wing
+    EXERCISE = "exercise"          # Yard time
+
+    # Work and education
     WORK = "work"                  # Workshop assignment
     EDUCATION = "education"        # Education classes
-    EXERCISE = "exercise"          # Yard time
-    ASSOCIATION = "association"    # Social time on wing
+
+    # Activities and programmes
     GYM = "gym"                    # Gym session
-    VISITS = "visits"              # Visitor time
-    HEALTHCARE = "healthcare"      # Medical appointments
     CHAPEL = "chapel"              # Religious services
     PROGRAMMES = "programmes"      # Rehabilitation programmes
+
+    # Visits and appointments
+    VISITS = "visits"              # Visitor time
+    HEALTHCARE = "healthcare"      # Medical appointments
+
+    # Special unit activities
+    HEALTHCARE_RESIDENCE = "healthcare_residence"  # Long-term healthcare resident
+    MEDICAL_ROUND = "medical_round"                # Daily medical rounds
+    INDUCTION = "induction"                        # New prisoner orientation
+    RECEPTION_PROCESSING = "reception_processing"  # New arrival processing
+
+    # Admin appointments
+    INTAKE_INTERVIEW = "intake_interview"          # Initial intake interview
+    PROBATION_MEETING = "probation_meeting"        # Probation officer meeting
+    DISCIPLINARY_HEARING = "disciplinary_hearing"  # Disciplinary hearing
+    PSYCHOLOGY_SESSION = "psychology_session"      # Psychology appointment
+    CASE_REVIEW = "case_review"                    # Case worker review
 
 
 class ScheduleEntry(BaseModel):

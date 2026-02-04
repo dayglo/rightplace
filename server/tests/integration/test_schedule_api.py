@@ -757,3 +757,78 @@ class TestScheduleAPIDelete:
         """Should return 404 for unknown entry."""
         response = client.delete("/api/v1/schedules/nonexistent-id")
         assert response.status_code == 404
+
+
+class TestNewActivityTypes:
+    """Tests for new activity types added for realistic schedules."""
+
+    def test_can_create_entries_with_new_activity_types(self, client, test_db):
+        """Should accept all new activity types (healthcare_residence, induction, etc)."""
+        from app.db.database import get_connection
+        from app.db.repositories.inmate_repo import InmateRepository
+        from app.db.repositories.location_repo import LocationRepository
+
+        # Setup test data
+        conn = get_connection(test_db)
+        inmate_repo = InmateRepository(conn)
+        location_repo = LocationRepository(conn)
+
+        inmate = inmate_repo.create(
+            InmateCreate(
+                inmate_number="A99999",
+                first_name="Test",
+                last_name="Patient",
+                date_of_birth=date(1985, 5, 15),
+                cell_block="H",
+                cell_number="H1-01",
+            )
+        )
+        location = location_repo.create(
+            LocationCreate(
+                name="Healthcare Unit",
+                type=LocationType.HEALTHCARE,
+                building="Medical",
+                floor=1,
+                capacity=30,
+            )
+        )
+        conn.close()
+
+        # Test new activity types added for realistic schedules
+        # Use different days to avoid conflicts
+        new_activity_types = [
+            "healthcare_residence",
+            "medical_round",
+            "induction",
+            "reception_processing",
+            "intake_interview",
+            "probation_meeting",
+            "disciplinary_hearing",
+            "psychology_session",
+            "case_review",
+        ]
+
+        for idx, activity_type in enumerate(new_activity_types):
+            # Use different days and times for each to avoid conflicts
+            day = idx % 7
+            hour = 9 + (idx % 3)  # 9, 10, or 11
+            start_time = f"{hour:02d}:00"
+            end_time = f"{hour+1:02d}:00"
+
+            response = client.post(
+                "/api/v1/schedules",
+                json={
+                    "inmate_id": inmate.id,
+                    "location_id": location.id,
+                    "day_of_week": day,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "activity_type": activity_type,
+                },
+            )
+            assert response.status_code == 201, (
+                f"Failed to create entry with activity_type={activity_type}: "
+                f"{response.json()}"
+            )
+            data = response.json()
+            assert data["activity_type"] == activity_type

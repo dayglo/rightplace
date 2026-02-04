@@ -22,21 +22,36 @@ class TestActivityType:
     """Tests for ActivityType enum."""
 
     def test_all_activity_types_defined(self):
-        """Should have 13 activity types defined."""
+        """Should have 23 activity types defined."""
         expected_types = {
+            # Base regime
             "roll_check",
             "lock_up",
             "unlock",
             "meal",
+            "association",
+            "exercise",
+            # Work and education
             "work",
             "education",
-            "exercise",
-            "association",
+            # Activities and programmes
             "gym",
-            "visits",
-            "healthcare",
             "chapel",
             "programmes",
+            # Visits and appointments
+            "visits",
+            "healthcare",
+            # Special unit activities
+            "healthcare_residence",
+            "medical_round",
+            "induction",
+            "reception_processing",
+            # Admin appointments
+            "intake_interview",
+            "probation_meeting",
+            "disciplinary_hearing",
+            "psychology_session",
+            "case_review",
         }
         actual_types = {t.value for t in ActivityType}
         assert actual_types == expected_types

@@ -2,13 +2,14 @@
 """
 Seed the database with the REAL HMP Oakwood structure.
 
-Based on published sources:
+Based on published sources and Inside Time reports:
 - 50-acre site
 - 3 residential blocks (17 buildings total)
-- 5 operational wings (3 large wings with 400+ prisoners each)
-- 3 landings per wing (1s, 2s, 3s - standard UK prison design)
-- Capacity: ~1,600 prisoners
-- Facilities: Healthcare, Education, 2 Workshops (one football-pitch sized), 
+- Capacity: 2,100-2,134 prisoners (operated by G4S)
+- Community model: ~35 communities (landings) of ~60 men each
+- 6 operational wings with 6 landings each = 36 communities
+- Each community has 30 cells (2 per cell = 60 capacity)
+- Facilities: Healthcare, Education, 2 Workshops (one football-pitch sized),
   Sports Centre, Kitchen, Visits, Drug Recovery Unit, Segregation
 """
 import sqlite3
@@ -63,81 +64,87 @@ def seed_hmp_oakwood():
         # ===== 3 HOUSEBLOCKS =====
         # HMP Oakwood has 3 residential blocks
         print("\n📍 Creating 3 houseblocks (residential blocks)...")
-        
+
         houseblocks = {}
         houseblock_configs = [
-            ("Houseblock 1", 900, "Block 1", 0, 0),    # Contains A & B Wings
-            ("Houseblock 2", 600, "Block 2", 300, 0),  # Contains C & D Wings
-            ("Houseblock 3", 150, "Block 3", 600, 0),  # Contains E Wing
+            ("Houseblock 1", 720, "Block 1", 0, 0),    # Contains A & B Wings (2 × 360)
+            ("Houseblock 2", 720, "Block 2", 300, 0),  # Contains C & D Wings (2 × 360)
+            ("Houseblock 3", 720, "Block 3", 600, 0),  # Contains E & F Wings (2 × 360)
         ]
-        
+
         for hb_name, hb_capacity, building, x, y in houseblock_configs:
-            hb_id = create_location(conn, hb_name, "houseblock", 
+            hb_id = create_location(conn, hb_name, "houseblock",
                                    capacity=hb_capacity, building=building,
                                    x=x, y=y)
             houseblocks[building] = hb_id
             all_locations[hb_name] = hb_id
             print(f"  ✅ Created {hb_name} (capacity: {hb_capacity})")
-        
-        # ===== 5 OPERATIONAL WINGS =====
-        # 3 large wings (400+ prisoners each) + 2 smaller wings
-        print("\n📍 Creating 5 operational wings inside houseblocks...")
-        
+
+        # ===== 6 OPERATIONAL WINGS =====
+        # Each wing has 6 communities (landings) of 60 men each
+        # Total: 6 wings × 360 capacity = 2,160 prisoners
+        print("\n📍 Creating 6 operational wings inside houseblocks...")
+        print("   (Community model: each landing is a 60-person community)")
+
         wings = []
         wing_configs = [
-            ("A Wing", 450, "Block 1"),  # Large wing in Houseblock 1
-            ("B Wing", 450, "Block 1"),  # Large wing in Houseblock 1
-            ("C Wing", 450, "Block 2"),  # Large wing in Houseblock 2
-            ("D Wing", 150, "Block 2"),  # Smaller wing in Houseblock 2
-            ("E Wing", 150, "Block 3"),  # Smaller wing in Houseblock 3
+            ("A Wing", 360, "Block 1"),  # 6 communities in Houseblock 1
+            ("B Wing", 360, "Block 1"),  # 6 communities in Houseblock 1
+            ("C Wing", 360, "Block 2"),  # 6 communities in Houseblock 2
+            ("D Wing", 360, "Block 2"),  # 6 communities in Houseblock 2
+            ("E Wing", 360, "Block 3"),  # 6 communities in Houseblock 3
+            ("F Wing", 360, "Block 3"),  # 6 communities in Houseblock 3
         ]
-        
+
+        total_communities = 0
+
         for idx, (wing_name, wing_capacity, building) in enumerate(wing_configs):
             # Wings are children of their houseblock
             parent_houseblock_id = houseblocks[building]
-            wing_id = create_location(conn, wing_name, "wing", 
+            wing_id = create_location(conn, wing_name, "wing",
                                      parent_id=parent_houseblock_id,
-                                     capacity=wing_capacity, building=building, 
+                                     capacity=wing_capacity, building=building,
                                      x=idx*150, y=50)
             wings.append(wing_id)
             all_locations[wing_name] = wing_id
             print(f"  ✅ Created {wing_name} (capacity: {wing_capacity}, {building})")
-            
-            # 3 landings per wing (standard UK design)
+
+            # 6 landings per wing (each landing is a "community" of 60 men)
             landings = []
-            cells_per_landing = wing_capacity // 3 // 2  # Divide by 3 landings, by 2 (capacity per cell)
-            
-            for landing_num in range(1, 4):  # 1s, 2s, 3s
-                landing_name = f"{landing_num}s"
+            cells_per_landing = 30  # 30 cells × 2 men = 60 capacity per community
+
+            for landing_num in range(1, 7):  # 6 landings: 1-6
+                landing_name = f"Landing {landing_num}"
                 landing_id = create_location(conn, landing_name, "landing", parent_id=wing_id,
-                                            capacity=cells_per_landing*2, floor=landing_num-1, building=building)
+                                            capacity=60, floor=(landing_num-1) % 3, building=building)
                 landings.append(landing_id)
                 all_locations[f"{wing_name}_{landing_name}"] = landing_id
-                
+                total_communities += 1
+
                 # Create cells on this landing
                 cells = []
-                wing_letter = wing_name[0]  # A, B, C, D, E
+                wing_letter = wing_name[0]  # A, B, C, D, E, F
                 for cell_num in range(1, cells_per_landing + 1):
                     cell_name = f"{wing_letter}{landing_num}-{cell_num:02d}"
                     cell_id = create_location(conn, cell_name, "cell", parent_id=landing_id,
-                                             capacity=2, floor=landing_num-1, building=building)
+                                             capacity=2, floor=(landing_num-1) % 3, building=building)
                     cells.append(cell_id)
-                
-                print(f"    Created {landing_name} with {cells_per_landing} cells")
-                
+
                 # Connect cells on same landing
                 for i in range(len(cells) - 1):
                     create_connection(conn, cells[i], cells[i+1], distance=3, time=5, conn_type="corridor")
-            
+
+            print(f"    Created 6 communities (landings) with 30 cells each (60 men per community)")
+
             # Connect landings via stairwell
             for i in range(len(landings) - 1):
                 create_connection(conn, landings[i], landings[i+1], distance=15, time=30, conn_type="stairwell")
-        
+
         # Connect wings
         for i in range(len(wings) - 1):
             create_connection(conn, wings[i], wings[i+1], distance=80, time=120, conn_type="walkway")
-        
-        print(f"\n✅ Created 5 wings with 3 landings each")
+
+        print(f"\n✅ Created 6 wings with {total_communities} total communities (landings)")
         
         # ===== SPECIAL UNITS =====
         print("\n📍 Creating special units...")
@@ -241,18 +248,18 @@ def seed_hmp_oakwood():
         print(f"Total connections: {connection_count}")
         print(f"Total cell capacity: {total_cell_capacity} prisoners")
         print(f"\nStructure:")
-        print(f"  - 5 Operational Wings (A-E)")
-        print(f"    • 3 large wings: 450 capacity each (A, B, C)")
-        print(f"    • 2 smaller wings: 150 capacity each (D, E)")
-        print(f"  - 15 Landings (3 per wing: 1s, 2s, 3s)")
-        print(f"  - Cells distributed across landings")
+        print(f"  - 3 Residential Blocks (Houseblocks 1-3)")
+        print(f"  - 6 Operational Wings (A-F): 360 capacity each")
+        print(f"  - 36 Communities (Landings): 60 men per community")
+        print(f"    • Community model: smaller, manageable groups to reduce violence")
+        print(f"    • Each community has 30 cells (2 per cell)")
         print(f"  - 5 Special Units (Healthcare, Segregation, VPU, Induction, Drug Recovery)")
         print(f"  - 10 Facilities (Education, 2 Workshops, Sports Centre, Chapel,")
         print(f"                   Visits, Reception, Kitchen, 2 Yards, Admin)")
         print(f"{'='*70}")
         print(f"\nBased on published sources:")
-        print(f"  - Wikipedia: 3 residential blocks, 17 buildings total")
-        print(f"  - BBC/Prison Insider: 5 operational wings")
+        print(f"  - Inside Time: 2,100-2,134 capacity, community model of ~60 men")
+        print(f"  - Wikipedia: 3 residential blocks, 17 buildings total, operated by G4S")
         print(f"  - Pick Everard: Healthcare, sports centre, kitchen, visits building")
         print(f"  - Prison Insider: One workshop 'the size of a football pitch'")
         print(f"{'='*70}")
