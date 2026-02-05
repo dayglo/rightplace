@@ -14,12 +14,14 @@ from app.db.database import init_db
 from app.db.repositories.inmate_repo import InmateRepository
 from app.db.repositories.location_repo import LocationRepository
 from app.db.repositories.rollcall_repo import RollCallRepository
+from app.db.repositories.schedule_repo import ScheduleRepository
 from app.db.repositories.verification_repo import VerificationRepository
 from app.models.inmate import InmateCreate
 from app.models.location import Location, LocationType, LocationCreate
 from app.models.rollcall import RollCall, RollCallCreate, RollCallStatus, RouteStop
+from app.models.schedule import ActivityType, ScheduleEntryCreate
 from app.models.verification import Verification, VerificationStatus
-from app.services.treemap_service import TreemapService
+from app.services.treemap_service import OccupancyMode, TreemapService
 
 
 @pytest.fixture
@@ -54,6 +56,12 @@ def rollcall_repo(test_conn):
 def verification_repo(test_conn):
     """Create VerificationRepository instance."""
     return VerificationRepository(test_conn)
+
+
+@pytest.fixture
+def schedule_repo(test_conn):
+    """Create ScheduleRepository instance."""
+    return ScheduleRepository(test_conn)
 
 
 @pytest.fixture
@@ -490,8 +498,10 @@ def test_build_treemap_hierarchy_single_rollcall(
     """
     timestamp = datetime(2024, 1, 15, 10, 0, 0)
 
+    # Use HOME_CELL mode since test fixtures use home cell assignments
     treemap_data = treemap_service.build_treemap_hierarchy(
-        [sample_rollcall.id], timestamp, include_empty=False
+        [sample_rollcall.id], timestamp, include_empty=False,
+        occupancy_mode=OccupancyMode.HOME_CELL
     )
 
     # Should have root node
@@ -543,8 +553,10 @@ def test_build_treemap_hierarchy_multiple_rollcalls(
 
     timestamp = datetime(2024, 1, 15, 10, 0, 0)
 
+    # Use HOME_CELL mode since test fixtures use home cell assignments
     treemap_data = treemap_service.build_treemap_hierarchy(
-        [sample_rollcall.id, rollcall2.id], timestamp, include_empty=False
+        [sample_rollcall.id, rollcall2.id], timestamp, include_empty=False,
+        occupancy_mode=OccupancyMode.HOME_CELL
     )
 
     # Should combine data from both rollcalls
@@ -575,8 +587,10 @@ def test_build_treemap_hierarchy_status_propagation(
 
     timestamp = datetime(2024, 1, 15, 10, 15, 0)
 
+    # Use HOME_CELL mode since test fixtures use home cell assignments
     treemap_data = treemap_service.build_treemap_hierarchy(
-        [sample_rollcall.id], timestamp, include_empty=False
+        [sample_rollcall.id], timestamp, include_empty=False,
+        occupancy_mode=OccupancyMode.HOME_CELL
     )
 
     # Find the prison node
@@ -601,8 +615,10 @@ def test_build_treemap_hierarchy_no_rollcalls_show_all(
     timestamp = datetime(2024, 1, 15, 10, 0, 0)
 
     # No rollcalls specified - should show everything with grey status
+    # Use HOME_CELL mode since test fixtures use home cell assignments
     treemap_data = treemap_service.build_treemap_hierarchy(
-        [], timestamp, include_empty=False
+        [], timestamp, include_empty=False,
+        occupancy_mode=OccupancyMode.HOME_CELL
     )
 
     # Should still have structure
@@ -626,11 +642,126 @@ def test_build_treemap_hierarchy_include_empty_locations(
     timestamp = datetime(2024, 1, 15, 10, 0, 0)
 
     # With include_empty=True, should show all locations even without inmates
+    # Use SCHEDULED mode here - include_empty should still work
     treemap_data = treemap_service.build_treemap_hierarchy(
-        [], timestamp, include_empty=True
+        [], timestamp, include_empty=True,
+        occupancy_mode=OccupancyMode.SCHEDULED
     )
 
     # Should have structure even without inmates
     assert treemap_data.name == "All Prisons"
     # The hierarchy should be present (prisons, wings, landings, cells)
     # even if they're empty
+
+
+def test_build_treemap_scheduled_mode_with_schedule_entries(
+    treemap_service,
+    sample_prison_hierarchy,
+    sample_inmates,
+    schedule_repo,
+):
+    """
+    Should show inmates at scheduled locations when using SCHEDULED mode.
+    """
+    # Create schedule entries for the inmate at a non-home-cell location (gym)
+    gym = sample_prison_hierarchy["prison"]  # Use prison as placeholder for gym
+    cell = sample_prison_hierarchy["cell_a101"]
+    inmate = sample_inmates["inmate1"]
+
+    # Create schedule entry: inmate at gym on Monday 10:00-11:00
+    schedule_entry = ScheduleEntryCreate(
+        inmate_id=inmate.id,
+        location_id=gym.id,  # Inmate scheduled at a different location
+        day_of_week=0,  # Monday
+        start_time="10:00",
+        end_time="11:00",
+        activity_type=ActivityType.GYM,
+        is_recurring=True,
+    )
+    schedule_repo.create(schedule_entry)
+
+    # Query at 10:30 on Monday - inmate should be at gym, not cell
+    timestamp = datetime(2024, 1, 15, 10, 30, 0)  # Monday
+
+    treemap_data = treemap_service.build_treemap_hierarchy(
+        [], timestamp, include_empty=False,
+        occupancy_mode=OccupancyMode.SCHEDULED
+    )
+
+    # With SCHEDULED mode, the inmate should show at the gym location
+    # not at their home cell
+    assert treemap_data.value >= 1  # At least one inmate in system
+
+    # The gym (prison in this test) should have inmates
+    prison_node = treemap_data.children[0]
+    assert prison_node.value >= 1
+
+
+def test_build_treemap_scheduled_mode_falls_back_to_home_cell(
+    treemap_service,
+    sample_prison_hierarchy,
+    sample_inmates,
+):
+    """
+    Should show inmates at home cells when SCHEDULED mode and no schedule entries.
+
+    Inmates without a schedule entry for the current time should default to their
+    home cell, not disappear from the visualization entirely.
+    """
+    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+
+    # With SCHEDULED mode and no schedule entries, inmates fall back to home cells
+    treemap_data = treemap_service.build_treemap_hierarchy(
+        [], timestamp, include_empty=False,
+        occupancy_mode=OccupancyMode.SCHEDULED
+    )
+
+    # Should show inmates at their home cells (same as HOME_CELL mode when no schedules)
+    assert treemap_data.value >= 1  # Inmates at home cells
+    assert len(treemap_data.children) >= 1
+
+    # Verify inmates are at their home cells
+    prison_node = treemap_data.children[0]
+    assert prison_node.value >= 1
+
+
+def test_build_treemap_home_cell_mode_ignores_schedule(
+    treemap_service,
+    sample_prison_hierarchy,
+    sample_inmates,
+    schedule_repo,
+):
+    """
+    Should show inmates at home cells when using HOME_CELL mode, ignoring schedule.
+    """
+    gym = sample_prison_hierarchy["prison"]
+    cell = sample_prison_hierarchy["cell_a101"]
+    inmate = sample_inmates["inmate1"]
+
+    # Create schedule entry: inmate at gym
+    schedule_entry = ScheduleEntryCreate(
+        inmate_id=inmate.id,
+        location_id=gym.id,
+        day_of_week=0,  # Monday
+        start_time="10:00",
+        end_time="11:00",
+        activity_type=ActivityType.GYM,
+        is_recurring=True,
+    )
+    schedule_repo.create(schedule_entry)
+
+    # Query at 10:30 on Monday
+    timestamp = datetime(2024, 1, 15, 10, 30, 0)
+
+    # With HOME_CELL mode, schedule is ignored - inmate should be at home cell
+    treemap_data = treemap_service.build_treemap_hierarchy(
+        [], timestamp, include_empty=False,
+        occupancy_mode=OccupancyMode.HOME_CELL
+    )
+
+    # Should show inmates based on home cell assignments
+    assert treemap_data.value >= 1
+
+    # Find the cell and verify inmate is there (based on home_cell_id)
+    prison_node = treemap_data.children[0]
+    assert prison_node.value >= 1

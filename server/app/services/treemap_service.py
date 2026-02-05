@@ -6,16 +6,25 @@ rollcall verification status across the prison hierarchy.
 """
 import sqlite3
 from datetime import datetime, timedelta
+from enum import Enum
 from typing import Dict, List, Optional, Set
 
 from app.db.repositories.inmate_repo import InmateRepository
 from app.db.repositories.location_repo import LocationRepository
 from app.db.repositories.rollcall_repo import RollCallRepository
+from app.db.repositories.schedule_repo import ScheduleRepository
 from app.db.repositories.verification_repo import VerificationRepository
 from app.models.location import Location, LocationType
 from app.models.rollcall import RollCall, RouteStop
 from app.models.treemap import InmateVerification, TreemapMetadata, TreemapNode, TreemapResponse
 from app.models.verification import Verification, VerificationStatus
+
+
+class OccupancyMode(str, Enum):
+    """Mode for determining inmate locations in treemap."""
+
+    SCHEDULED = "scheduled"  # Use schedule data - inmates at their scheduled location
+    HOME_CELL = "home_cell"  # Use home cell assignments - inmates always in their cell
 
 
 class TreemapService:
@@ -35,10 +44,15 @@ class TreemapService:
         self.location_repo = LocationRepository(conn)
         self.inmate_repo = InmateRepository(conn)
         self.rollcall_repo = RollCallRepository(conn)
+        self.schedule_repo = ScheduleRepository(conn)
         self.verification_repo = VerificationRepository(conn)
 
     def build_treemap_hierarchy(
-        self, rollcall_ids: List[str], timestamp: datetime, include_empty: bool = False
+        self,
+        rollcall_ids: List[str],
+        timestamp: datetime,
+        include_empty: bool = False,
+        occupancy_mode: OccupancyMode = OccupancyMode.SCHEDULED,
     ) -> TreemapResponse:
         """
         Build hierarchical treemap structure for multiple rollcalls at a given timestamp.
@@ -47,6 +61,7 @@ class TreemapService:
             rollcall_ids: List of rollcall IDs to include (empty list = show all locations)
             timestamp: Point in time to show status
             include_empty: If True, include locations with no inmates
+            occupancy_mode: How to determine inmate locations (scheduled or home_cell)
 
         Returns:
             TreemapResponse with root node and children
@@ -71,13 +86,21 @@ class TreemapService:
                 verifications = self.verification_repo.get_by_roll_call(rollcall_id)
                 all_verifications.extend(verifications)
 
+        # Build location -> inmates map based on occupancy mode
+        location_inmates_map = self._build_location_inmates_map(timestamp, occupancy_mode)
+
         # Build location hierarchy starting from prisons
         prisons = self._get_prison_locations()
 
         if not prisons:
             # Fallback: build from houseblocks if no prisons exist
             return self._build_from_houseblocks(
-                rollcalls, estimated_times_map, all_verifications, timestamp, include_empty
+                rollcalls,
+                estimated_times_map,
+                all_verifications,
+                timestamp,
+                include_empty,
+                location_inmates_map,
             )
 
         # Build children for root node (all prisons)
@@ -92,6 +115,7 @@ class TreemapService:
                 all_verifications,
                 timestamp,
                 include_empty,
+                location_inmates_map,
             )
             if prison_node:
                 children.append(prison_node)
@@ -125,6 +149,65 @@ class TreemapService:
             estimated_times[stop.location_id] = estimated_arrival
 
         return estimated_times
+
+    def _build_location_inmates_map(
+        self, timestamp: datetime, occupancy_mode: OccupancyMode
+    ) -> Dict[str, List]:
+        """
+        Build a map of location_id to list of inmates at that location.
+
+        Args:
+            timestamp: Point in time to check
+            occupancy_mode: How to determine inmate locations
+
+        Returns:
+            Dict mapping location_id to list of Inmate objects
+        """
+        from app.models.inmate import Inmate
+
+        location_inmates: Dict[str, List] = {}
+
+        if occupancy_mode == OccupancyMode.HOME_CELL:
+            # Use home cell assignments - get all inmates and group by home_cell_id
+            all_inmates = self.inmate_repo.get_all()
+            for inmate in all_inmates:
+                if inmate.home_cell_id:
+                    if inmate.home_cell_id not in location_inmates:
+                        location_inmates[inmate.home_cell_id] = []
+                    location_inmates[inmate.home_cell_id].append(inmate)
+        else:
+            # SCHEDULED mode - inmates at scheduled location, or home cell if no schedule
+            day_of_week = timestamp.weekday()  # 0=Monday, 6=Sunday
+            time_str = timestamp.strftime("%H:%M")
+
+            # Get all inmates
+            all_inmates = self.inmate_repo.get_all()
+
+            # Get schedule entries active at this time
+            schedule_entries = self.schedule_repo.get_at_time(day_of_week, time_str)
+
+            # Build a map of inmate_id -> scheduled location
+            scheduled_locations: Dict[str, str] = {}
+            for entry in schedule_entries:
+                scheduled_locations[entry.inmate_id] = entry.location_id
+
+            # Place each inmate at their scheduled location or home cell
+            for inmate in all_inmates:
+                if inmate.id in scheduled_locations:
+                    # Inmate has a schedule entry - use scheduled location
+                    location_id = scheduled_locations[inmate.id]
+                elif inmate.home_cell_id:
+                    # No schedule entry - fall back to home cell
+                    location_id = inmate.home_cell_id
+                else:
+                    # No schedule and no home cell - skip
+                    continue
+
+                if location_id not in location_inmates:
+                    location_inmates[location_id] = []
+                location_inmates[location_id].append(inmate)
+
+        return location_inmates
 
     def determine_location_status(
         self,
@@ -274,6 +357,7 @@ class TreemapService:
         verifications: List[Verification],
         timestamp: datetime,
         include_empty: bool = False,
+        location_inmates_map: Optional[Dict[str, List]] = None,
     ) -> TreemapResponse:
         """
         Fallback: build treemap from houseblocks if no prisons exist.
@@ -283,10 +367,15 @@ class TreemapService:
             estimated_times_map: Map of estimated times
             verifications: All verifications
             timestamp: Point in time
+            include_empty: If True, include locations with no inmates
+            location_inmates_map: Map of location_id to list of inmates at that location
 
         Returns:
             TreemapResponse rooted at "All Facilities"
         """
+        if location_inmates_map is None:
+            location_inmates_map = {}
+
         # Get all houseblocks
         cursor = self.conn.execute(
             "SELECT * FROM locations WHERE type = ? AND parent_id IS NULL",
@@ -319,6 +408,7 @@ class TreemapService:
                 verifications,
                 timestamp,
                 include_empty,
+                location_inmates_map,
             )
             if hb_node:
                 children.append(hb_node)
@@ -339,6 +429,7 @@ class TreemapService:
         verifications: List[Verification],
         timestamp: datetime,
         include_empty: bool = False,
+        location_inmates_map: Optional[Dict[str, List]] = None,
     ) -> Optional[TreemapNode]:
         """
         Recursively build a subtree for a location.
@@ -349,10 +440,15 @@ class TreemapService:
             estimated_times_map: Map of estimated times
             verifications: All verifications
             timestamp: Point in time
+            include_empty: If True, include locations with no inmates
+            location_inmates_map: Map of location_id to list of inmates at that location
 
         Returns:
             TreemapNode or None if location has no inmates/children
         """
+        if location_inmates_map is None:
+            location_inmates_map = {}
+
         # Get child locations
         children_nodes = []
         cursor = self.conn.execute(
@@ -384,69 +480,79 @@ class TreemapService:
                 verifications,
                 timestamp,
                 include_empty,
+                location_inmates_map,
             )
             if child_node:
                 children_nodes.append(child_node)
 
-        # Get inmates at this location (for cells)
-        inmate_count = 0
+        # Get inmates at this location (from the prebuilt map)
+        # This works for ANY location type - cells, gym, education, etc.
+        inmates = location_inmates_map.get(location.id, [])
+        inmate_count = len(inmates)
         verified_count = 0
         failed_count = 0
         inmate_details: List[InmateVerification] = []
 
-        if location.type == LocationType.CELL:
-            inmates = self.inmate_repo.get_by_home_cell(location.id)
-            inmate_count = len(inmates)
+        # Build inmate details with verification status
+        for inmate in inmates:
+            # Find verification for this inmate at this location
+            inmate_verification = None
+            for v in verifications:
+                if v.location_id == location.id and v.inmate_id == inmate.id:
+                    inmate_verification = v
+                    break
 
-            # Build inmate details with verification status
-            for inmate in inmates:
-                # Find verification for this inmate at this location
-                inmate_verification = None
-                for v in verifications:
-                    if v.location_id == location.id and v.expected_inmate_id == inmate.id:
-                        inmate_verification = v
-                        break
-
-                # Determine status
-                if inmate_verification:
-                    if inmate_verification.status == VerificationStatus.VERIFIED:
-                        verified_count += 1
-                        status = "verified"
-                    elif inmate_verification.status == VerificationStatus.NOT_FOUND:
-                        failed_count += 1
-                        status = "not_found"
-                    elif inmate_verification.status == VerificationStatus.WRONG_LOCATION:
-                        failed_count += 1
-                        status = "wrong_location"
-                    else:
-                        status = "pending"
+            # Determine status
+            if inmate_verification:
+                if inmate_verification.status == VerificationStatus.VERIFIED:
+                    verified_count += 1
+                    status = "verified"
+                elif inmate_verification.status == VerificationStatus.NOT_FOUND:
+                    failed_count += 1
+                    status = "not_found"
+                elif inmate_verification.status == VerificationStatus.WRONG_LOCATION:
+                    failed_count += 1
+                    status = "wrong_location"
                 else:
                     status = "pending"
+            else:
+                status = "pending"
 
-                inmate_details.append(
-                    InmateVerification(
-                        inmate_id=inmate.id,
-                        name=f"{inmate.first_name} {inmate.last_name}",
-                        status=status,
-                    )
+            inmate_details.append(
+                InmateVerification(
+                    inmate_id=inmate.id,
+                    name=f"{inmate.first_name} {inmate.last_name}",
+                    status=status,
                 )
+            )
 
-        # Calculate value (inmate count)
-        if location.type == LocationType.CELL:
-            value = inmate_count
-        else:
-            # For parent nodes, sum children values
-            value = sum(child.value for child in children_nodes)
+        # Calculate value: direct inmates at this location + sum of children
+        direct_value = inmate_count
+        children_value = sum(child.value for child in children_nodes)
+        value = direct_value + children_value
 
-        # If no inmates and no children, skip this location (unless include_empty is True)
-        if not include_empty and value == 0 and not children_nodes:
+        # If no inmates at this location or any descendants, skip it
+        # (unless include_empty is True)
+        if not include_empty and value == 0:
             return None
 
         # Determine status
-        if children_nodes:
-            # Aggregate from children
-            children_statuses = [child.status for child in children_nodes]
-            status = self.aggregate_status_upward(children_statuses)
+        if children_nodes or inmate_count > 0:
+            # Collect statuses from children and this node's direct inmates
+            all_statuses = [child.status for child in children_nodes]
+
+            # If this location has direct inmates, determine its own status
+            if inmate_count > 0:
+                direct_status = self.determine_location_status(
+                    location,
+                    rollcalls,
+                    estimated_times_map,
+                    verifications,
+                    timestamp,
+                )
+                all_statuses.append(direct_status)
+
+            status = self.aggregate_status_upward(all_statuses) if all_statuses else "grey"
 
             # Sum metadata from children
             for child in children_nodes:
@@ -455,14 +561,8 @@ class TreemapService:
                     verified_count += child.metadata.verified_count
                     failed_count += child.metadata.failed_count
         else:
-            # Leaf node (cell)
-            status = self.determine_location_status(
-                location,
-                rollcalls,
-                estimated_times_map,
-                verifications,
-                timestamp,
-            )
+            # No children and no inmates - grey status
+            status = "grey"
 
         # Build metadata
         metadata = TreemapMetadata(

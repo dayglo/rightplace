@@ -50,6 +50,12 @@
 		treemapStore.fetchData();
 	}
 
+	function handleOccupancyModeChange(event: Event) {
+		const mode = (event.target as HTMLSelectElement).value as 'scheduled' | 'home_cell';
+		treemapStore.setOccupancyMode(mode);
+		treemapStore.fetchData();
+	}
+
 	function handleZoomOut() {
 		treemapStore.zoomOut();
 	}
@@ -126,6 +132,18 @@
 					class="px-3 py-1 border rounded text-sm"
 					disabled={$treemapStore.liveMode}
 				/>
+			</div>
+
+			<div class="flex items-center gap-2">
+				<label class="text-sm text-gray-700">Occupancy:</label>
+				<select
+					value={$treemapStore.occupancyMode}
+					on:change={handleOccupancyModeChange}
+					class="px-3 py-1 border rounded text-sm bg-white"
+				>
+					<option value="scheduled">Scheduled Location</option>
+					<option value="home_cell">Home Cell</option>
+				</select>
 			</div>
 
 			<div class="flex items-center gap-2">
@@ -257,9 +275,9 @@
 				</div>
 			</div>
 			<div class="bg-white p-4 rounded-lg shadow-sm">
-				<div class="text-sm text-gray-600">Status</div>
+				<div class="text-sm text-gray-600">Occupancy Mode</div>
 				<div class="text-2xl font-bold text-gray-900">
-					{$treemapStore.liveMode ? '🔴 LIVE' : '📊 Snapshot'}
+					{$treemapStore.occupancyMode === 'scheduled' ? '📅 Scheduled' : '🏠 Home Cell'}
 				</div>
 			</div>
 		</div>

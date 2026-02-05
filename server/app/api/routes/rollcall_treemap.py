@@ -4,13 +4,14 @@ Treemap visualization endpoint for Prison Roll Call API.
 Provides hierarchical treemap data for rollcall status visualization.
 """
 from datetime import datetime
+from enum import Enum
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 
 from app.db.database import get_db
 from app.models.treemap import TreemapResponse
-from app.services.treemap_service import TreemapService
+from app.services.treemap_service import OccupancyMode, TreemapService
 
 router = APIRouter()
 
@@ -37,6 +38,10 @@ def get_treemap(
         False,
         description="Include locations with no inmates",
     ),
+    occupancy_mode: OccupancyMode = Query(
+        OccupancyMode.SCHEDULED,
+        description="How to determine inmate locations: 'scheduled' uses schedule data, 'home_cell' uses static assignments",
+    ),
     treemap_service: TreemapService = Depends(get_treemap_service),
 ) -> TreemapResponse:
     """
@@ -49,11 +54,15 @@ def get_treemap(
     - timestamp: ISO 8601 timestamp for which to show status (required)
     - rollcall_ids: Comma-separated list of rollcall IDs (optional, empty = show all locations)
     - include_empty: Include locations with no inmates (default: false)
+    - occupancy_mode: How to determine where inmates are (default: scheduled)
+      - 'scheduled': Use schedule data to show where inmates should be at the timestamp
+      - 'home_cell': Use static home cell assignments (inmates always in their cell)
 
     **Usage:**
     - With rollcalls: Shows status in context of specified rollcalls
     - Without rollcalls: Shows entire prison hierarchy with grey status (management view)
     - With include_empty: Shows all locations including empty cells
+    - With occupancy_mode=scheduled: Circles scale/disappear based on who's actually there
 
     **Status Color Coding:**
     - Grey: Locations with prisoners but no rollcall scheduled at timestamp
@@ -84,7 +93,7 @@ def get_treemap(
 
         # Build treemap hierarchy
         treemap_data = treemap_service.build_treemap_hierarchy(
-            rollcall_id_list, timestamp_dt, include_empty
+            rollcall_id_list, timestamp_dt, include_empty, occupancy_mode
         )
 
         return treemap_data

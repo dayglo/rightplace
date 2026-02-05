@@ -42,12 +42,16 @@ class TestTreemapEndpoint:
         assert "Invalid timestamp format" in response.json()["detail"]
 
     def test_get_treemap_missing_rollcall_ids(self, client: TestClient):
-        """Should return 422 when rollcall_ids parameter is missing."""
+        """Should return 200 when rollcall_ids is omitted (shows all locations mode)."""
         timestamp = "2024-01-15T10:00:00"
 
         response = client.get(f"/api/v1/treemap?timestamp={timestamp}")
 
-        assert response.status_code == 422
+        # Omitting rollcall_ids is valid - returns "show all locations" view
+        assert response.status_code == 200
+        data = response.json()
+        # Root name depends on whether prisons exist
+        assert data["name"] in ["All Prisons", "All Facilities"]
 
     def test_get_treemap_missing_timestamp(self, client: TestClient):
         """Should return 422 when timestamp parameter is missing."""

@@ -35,6 +35,9 @@ export interface TreemapResponse {
 	children: TreemapNode[];
 }
 
+// Occupancy mode - how to determine where inmates are
+export type OccupancyMode = 'scheduled' | 'home_cell';
+
 interface TreemapState {
 	// Selected rollcall IDs (empty = show all)
 	selectedRollcallIds: string[];
@@ -63,6 +66,9 @@ interface TreemapState {
 	// Include empty locations
 	includeEmpty: boolean;
 
+	// Occupancy mode - how to determine where inmates are
+	occupancyMode: OccupancyMode;
+
 	// Current zoom path (for breadcrumb navigation)
 	zoomPath: TreemapNode[];
 }
@@ -79,6 +85,7 @@ const initialState: TreemapState = {
 	error: null,
 	liveMode: false,
 	includeEmpty: false,
+	occupancyMode: 'home_cell', // Default to home_cell mode until schedule data is populated
 	zoomPath: [],
 };
 
@@ -120,6 +127,11 @@ function createTreemapStore() {
 			update(state => ({ ...state, includeEmpty: !state.includeEmpty }));
 		},
 
+		// Set occupancy mode
+		setOccupancyMode: (mode: OccupancyMode) => {
+			update(state => ({ ...state, occupancyMode: mode }));
+		},
+
 		// Fetch treemap data
 		fetchData: async (baseUrl: string = 'http://localhost:8000') => {
 			update(state => ({ ...state, loading: true, error: null }));
@@ -130,6 +142,7 @@ function createTreemapStore() {
 					state.selectedRollcallIds = s.selectedRollcallIds;
 					state.timestamp = s.timestamp;
 					state.includeEmpty = s.includeEmpty;
+					state.occupancyMode = s.occupancyMode;
 					return s;
 				});
 
@@ -137,6 +150,7 @@ function createTreemapStore() {
 				const params = new URLSearchParams({
 					timestamp: state.timestamp.toISOString(),
 					include_empty: state.includeEmpty.toString(),
+					occupancy_mode: state.occupancyMode,
 				});
 
 				if (state.selectedRollcallIds.length > 0) {

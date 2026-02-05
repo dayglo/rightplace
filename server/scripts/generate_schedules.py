@@ -330,7 +330,7 @@ def generate_schedules(conn, prisoners, status_groups):
     print("\nGenerating schedules...")
 
     # Get location IDs
-    cell_loc = get_location_by_type(conn, "cell")  # Generic cell for base activities
+    # Note: For cell-based activities, we use prisoner["cell_id"] (their home cell)
     workshop_loc = get_location_by_type(conn, "workshop")
     education_loc = get_location_by_type(conn, "education")
     kitchen_loc = get_location_by_type(conn, "kitchen")
@@ -368,7 +368,7 @@ def generate_schedules(conn, prisoners, status_groups):
                 if is_weekend:
                     # Weekend regime
                     for start, end, activity in WEEKEND_BASE_REGIME:
-                        loc = cell_loc if activity in ["roll_check", "unlock", "meal", "lock_up"] else wing_loc
+                        loc = prisoner["cell_id"] if activity in ["roll_check", "unlock", "meal", "lock_up"] else wing_loc
                         if activity == "association":
                             loc = wing_loc
                         create_schedule_entry(conn, prisoner_id, loc, day, start, end, activity)
@@ -381,7 +381,7 @@ def generate_schedules(conn, prisoners, status_groups):
                 else:
                     # Weekday regime
                     for start, end, activity in WEEKDAY_BASE_REGIME:
-                        loc = cell_loc if activity in ["roll_check", "unlock", "meal", "lock_up"] else wing_loc
+                        loc = prisoner["cell_id"] if activity in ["roll_check", "unlock", "meal", "lock_up"] else wing_loc
                         if activity == "association":
                             loc = wing_loc
                         create_schedule_entry(conn, prisoner_id, loc, day, start, end, activity)
@@ -410,8 +410,8 @@ def generate_schedules(conn, prisoners, status_groups):
                         create_schedule_entry(conn, prisoner_id, wing_loc, day, "13:30", "16:30", "work")
                         total_entries += 2
                     else:  # unemployed
-                        create_schedule_entry(conn, prisoner_id, cell_loc, day, "08:30", "12:00", "lock_up")
-                        create_schedule_entry(conn, prisoner_id, cell_loc, day, "13:30", "16:30", "lock_up")
+                        create_schedule_entry(conn, prisoner_id, prisoner["cell_id"], day, "08:30", "12:00", "lock_up")
+                        create_schedule_entry(conn, prisoner_id, prisoner["cell_id"], day, "13:30", "16:30", "lock_up")
                         total_entries += 2
 
         if len(prisoners_in_role) > 0:
@@ -473,13 +473,13 @@ def generate_schedules(conn, prisoners, status_groups):
             if is_weekend:
                 # Weekend regime
                 for start, end, activity in WEEKEND_BASE_REGIME:
-                    loc = cell_loc
+                    loc = prisoner["cell_id"]  # Use prisoner's own cell
                     create_schedule_entry(conn, prisoner_id, loc, day, start, end, activity)
                     total_entries += 1
             else:
                 # Weekday induction program
                 for start, end, activity in WEEKDAY_BASE_REGIME:
-                    loc = cell_loc if activity in ["roll_check", "unlock", "meal", "lock_up", "association"] else cell_loc
+                    loc = prisoner["cell_id"]  # Use prisoner's own cell for all base activities
                     create_schedule_entry(conn, prisoner_id, loc, day, start, end, activity)
                     total_entries += 1
 
