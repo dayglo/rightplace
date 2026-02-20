@@ -26,6 +26,16 @@
 	$: canZoomIn = focus && view[2] > focus.r * 1.5;
 	$: canZoomOut_manual = root && view[2] < root.r * 6.5;
 
+	// Debug: Log when data changes
+	$: if (data) {
+		console.log('[CirclePacking] 📊 Data updated, re-rendering...', {
+			rootName: data.name,
+			value: data.value,
+			childrenCount: data.children?.length || 0,
+			preservedFocusId
+		});
+	}
+
 	const colorMap: Record<string, string> = {
 		grey: '#6B7280',   // gray-500
 		amber: '#F59E0B',  // amber-500
@@ -39,6 +49,13 @@
 		// Save current focus ID before clearing (to preserve zoom state during playback)
 		if (focus && focus.data && focus.data.id) {
 			preservedFocusId = focus.data.id;
+			console.log('[CirclePacking] 🔍 Saving focus before re-render:', {
+				id: preservedFocusId,
+				name: focus.data.name,
+				type: focus.data.type
+			});
+		} else {
+			console.log('[CirclePacking] 🔍 No focus to preserve (at root or no previous focus)');
 		}
 
 		// Clear previous render and cleanup tooltips
@@ -85,6 +102,7 @@
 
 		// Try to restore previous focus (preserve zoom during playback)
 		if (preservedFocusId) {
+			console.log('[CirclePacking] 🔍 Attempting to restore focus:', preservedFocusId);
 			// Search for the node with the preserved ID in the new hierarchy
 			let foundNode = null;
 			root.each((node: any) => {
@@ -93,11 +111,27 @@
 				}
 			});
 			focus = foundNode || root;
+			if (foundNode) {
+				console.log('[CirclePacking] ✅ Focus restored:', {
+					id: focus.data.id,
+					name: focus.data.name,
+					type: focus.data.type
+				});
+			} else {
+				console.log('[CirclePacking] ❌ Failed to find preserved node, resetting to root');
+			}
 		} else {
+			console.log('[CirclePacking] 🏠 No preserved focus, starting at root');
 			focus = root;
 		}
 
 		view = [focus.x, focus.y, focus.r * 4.0];
+		console.log('[CirclePacking] 📐 Initial view set:', {
+			x: view[0],
+			y: view[1],
+			diameter: view[2],
+			focusName: focus.data.name
+		});
 
 		// Helper function to zoom to a specific view
 		function zoomTo(v: [number, number, number]) {
@@ -119,6 +153,11 @@
 			// Save the new focus ID for preservation across data updates
 			if (focus && focus.data && focus.data.id) {
 				preservedFocusId = focus.data.id;
+				console.log('[CirclePacking] 🎯 User zoomed to:', {
+					id: preservedFocusId,
+					name: focus.data.name,
+					type: focus.data.type
+				});
 			}
 
 			// Determine duration (longer with alt key)
