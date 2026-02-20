@@ -219,7 +219,8 @@ function createTreemapStore() {
 
 				const data = await response.json();
 
-				update(s => ({ ...s, data, loading: false, zoomPath: [] }));
+				// Preserve zoom path so users can watch cells change color during playback
+				update(s => ({ ...s, data, loading: false }));
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 				update(state => ({ ...state, loading: false, error: errorMessage }));
@@ -474,7 +475,8 @@ function createTreemapStore() {
 
 		// Set data directly (for cache hits)
 		setData: (data: TreemapResponse) => {
-			update(state => ({ ...state, data, zoomPath: [] }));
+			// Preserve zoom path so users can watch cells change color during playback
+			update(state => ({ ...state, data }));
 		},
 
 		// Reset to initial state

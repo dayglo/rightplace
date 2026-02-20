@@ -17,6 +17,7 @@
 	let root: any = null; // Will hold hierarchy root (needed for zoom limits)
 	let handleManualZoomFn: ((direction: 'in' | 'out') => void) | null = null;
 	let zoomFn: ((d: any, event?: MouseEvent) => void) | null = null;
+	let preservedFocusId: string | undefined = undefined; // Preserve zoom state across data updates
 
 	// Update canZoomOut based on focus
 	$: canZoomOut = focus && focus.parent;
@@ -34,6 +35,11 @@
 
 	function renderCirclePacking() {
 		if (!container || !data) return;
+
+		// Save current focus ID before clearing (to preserve zoom state during playback)
+		if (focus && focus.data && focus.data.id) {
+			preservedFocusId = focus.data.id;
+		}
 
 		// Clear previous render and cleanup tooltips
 		d3.select(container).selectAll('*').remove();
@@ -76,7 +82,21 @@
 		//   - SMALLER value (e.g., 2.6) = MORE zoomed in (closer view, less visible)
 		//   - LARGER value (e.g., 6.5) = MORE zoomed out (wider view, more visible)
 		//   Current: 4.0 = balanced default showing good detail + context
-		focus = root;
+
+		// Try to restore previous focus (preserve zoom during playback)
+		if (preservedFocusId) {
+			// Search for the node with the preserved ID in the new hierarchy
+			let foundNode = null;
+			root.each((node: any) => {
+				if (node.data && node.data.id === preservedFocusId) {
+					foundNode = node;
+				}
+			});
+			focus = foundNode || root;
+		} else {
+			focus = root;
+		}
+
 		view = [focus.x, focus.y, focus.r * 4.0];
 
 		// Helper function to zoom to a specific view
@@ -95,6 +115,11 @@
 		function zoom(d: any, event?: MouseEvent) {
 			const focus0 = focus;
 			focus = d;
+
+			// Save the new focus ID for preservation across data updates
+			if (focus && focus.data && focus.data.id) {
+				preservedFocusId = focus.data.id;
+			}
 
 			// Determine duration (longer with alt key)
 			const duration = event?.altKey ? 7500 : 750;
