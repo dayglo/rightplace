@@ -1,3 +1,9 @@
+<script context="module" lang="ts">
+	// Module-level state - persists across component instances and re-renders
+	let preservedFocusId: string | undefined = undefined;
+	let preservedZoomRatio: number = 4.0; // Ratio of view diameter to focus radius (default 4.0)
+</script>
+
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import * as d3 from 'd3';
@@ -17,7 +23,6 @@
 	let root: any = null; // Will hold hierarchy root (needed for zoom limits)
 	let handleManualZoomFn: ((direction: 'in' | 'out') => void) | null = null;
 	let zoomFn: ((d: any, event?: MouseEvent) => void) | null = null;
-	let preservedFocusId: string | undefined = undefined; // Preserve zoom state across data updates
 
 	// Update canZoomOut based on focus
 	$: canZoomOut = focus && focus.parent;
@@ -125,12 +130,13 @@
 			focus = root;
 		}
 
-		view = [focus.x, focus.y, focus.r * 4.0];
+		view = [focus.x, focus.y, focus.r * preservedZoomRatio];
 		console.log('[CirclePacking] 📐 Initial view set:', {
 			x: view[0],
 			y: view[1],
 			diameter: view[2],
-			focusName: focus.data.name
+			focusName: focus.data.name,
+			zoomRatio: preservedZoomRatio
 		});
 
 		// Helper function to zoom to a specific view
@@ -166,7 +172,7 @@
 			const transition = svg.transition()
 				.duration(duration)
 				.tween('zoom', () => {
-					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 4.0]);
+					const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * preservedZoomRatio]);
 					return (t: number) => zoomTo(i(t));
 				});
 
@@ -202,6 +208,10 @@
 
 			// Keep same center, change diameter
 			const newView: [number, number, number] = [view[0], view[1], newDiameter];
+
+			// Save the zoom ratio for preservation across re-renders
+			preservedZoomRatio = newDiameter / focus.r;
+			console.log('[CirclePacking] 🔎 Manual zoom, new ratio:', preservedZoomRatio);
 
 			// Animate the zoom
 			svg.transition()
@@ -480,8 +490,8 @@
 			tooltip.style('opacity', 0);
 		});
 
-		// Initialize zoom to root (zoomed out for better overview)
-		zoomTo([root.x, root.y, root.r * 4.0]);
+		// Apply the initial view (either restored focus or root)
+		zoomTo(view);
 
 		// Expose functions to component template
 		handleManualZoomFn = handleManualZoom;
