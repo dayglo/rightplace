@@ -1,1 +1,0 @@
-- the virtualenv for the server is in server/.venv. you MUST activate it when you make a new terminal 

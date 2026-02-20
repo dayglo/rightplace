@@ -35,6 +35,16 @@ class LocationType(str, Enum):
     YARD = "yard"                   # Exercise yard
     ADMIN = "admin"                 # Admin offices
 
+    # Sub-locations
+    CLASSROOM = "classroom"         # Classroom within education
+    WORK_BAY = "work_bay"           # Work bay within workshop
+    ROOM = "room"                   # Generic room
+    CHANGING = "changing"           # Changing room (e.g., gym)
+
+    # Healthcare sub-locations
+    WARD = "ward"                   # Ward within healthcare
+    TREATMENT = "treatment"         # Treatment room
+
 
 class LocationCreate(BaseModel):
     """Data required to create a new location."""

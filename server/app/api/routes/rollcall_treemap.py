@@ -10,7 +10,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query
 
 from app.db.database import get_db
-from app.models.treemap import TreemapResponse
+from app.models.treemap import TreemapBatchRequest, TreemapBatchResponse, TreemapResponse
 from app.services.treemap_service import OccupancyMode, TreemapService
 
 router = APIRouter()
@@ -104,4 +104,64 @@ def get_treemap(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to build treemap: {str(e)}",
+        )
+
+
+@router.post("/treemap/batch", response_model=TreemapBatchResponse)
+def get_treemap_batch(
+    request: TreemapBatchRequest,
+    treemap_service: TreemapService = Depends(get_treemap_service),
+) -> TreemapBatchResponse:
+    """
+    Get treemap data for multiple timestamps in a single request.
+
+    Used for prefetching timeline cache to enable smooth playback/scrubbing.
+    Returns a dictionary mapping each timestamp to its corresponding treemap data.
+
+    **Request Body:**
+    - timestamps: List of ISO 8601 formatted timestamps
+    - prison_ids: Optional list of prison IDs to filter (default: all prisons)
+    - rollcall_ids: Optional list of rollcall IDs (default: show all locations)
+    - include_empty: Include locations with no inmates (default: false)
+    - occupancy_mode: 'scheduled' or 'home_cell' (default: 'scheduled')
+
+    **Response:**
+    - data: Dictionary mapping each timestamp string to its TreemapResponse
+    """
+    try:
+        results = {}
+
+        # Parse occupancy mode with fallback
+        try:
+            occupancy = OccupancyMode(request.occupancy_mode)
+        except ValueError:
+            occupancy = OccupancyMode.SCHEDULED
+
+        for ts in request.timestamps:
+            try:
+                timestamp_dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid timestamp format: {ts}. Expected ISO 8601 format.",
+                )
+
+            # Note: prison_ids filter is accepted but not yet implemented in service
+            # For now, service returns all prisons and frontend filters
+            treemap_data = treemap_service.build_treemap_hierarchy(
+                request.rollcall_ids or [],
+                timestamp_dt,
+                request.include_empty,
+                occupancy,
+            )
+            results[ts] = treemap_data
+
+        return TreemapBatchResponse(data=results)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to build batch treemap: {str(e)}",
         )

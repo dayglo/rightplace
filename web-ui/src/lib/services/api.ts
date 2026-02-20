@@ -326,23 +326,57 @@ export async function enrollFace(inmateId: string, imageData: string): Promise<E
 // FACE VERIFICATION
 // ============================================================================
 
+export interface BoundingBox {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
+export interface FaceLandmarks {
+	left_eye: [number, number];
+	right_eye: [number, number];
+	nose: [number, number];
+	left_mouth: [number, number];
+	right_mouth: [number, number];
+}
+
+export type QualityIssue = 'no_face' | 'multi_face' | 'low_light' | 'blur' | 'angle' | 'occlusion' | 'too_far' | 'too_close';
+
+export interface DetectionResult {
+	detected: boolean;
+	face_count: number;
+	bounding_box: BoundingBox | null;
+	landmarks: FaceLandmarks | null;
+	quality: number;
+	quality_issues: QualityIssue[];
+}
+
+export type MatchRecommendation = 'auto_accept' | 'confirm' | 'review' | 'no_match';
+
 export interface VerificationResult {
 	matched: boolean;
 	inmate_id?: string;
 	inmate_name?: string;
 	confidence: number;
 	threshold: number;
-	message: string;
+	threshold_used?: number;
+	message?: string;
+	recommendation?: MatchRecommendation;
+	at_expected_location?: boolean;
+	all_matches?: any[];
+	detection?: DetectionResult;
 }
 
-export async function verifyFace(locationId: string, imageData: string): Promise<VerificationResult> {
+export async function verifyFace(locationId: string, rollCallId: string, imageData: string): Promise<VerificationResult> {
 	// Convert base64 to blob
 	const base64Data = imageData.split(',')[1];
 	const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(r => r.blob());
-	
+
 	const formData = new FormData();
 	formData.append('image', blob, 'verification.jpg');
 	formData.append('location_id', locationId);
+	formData.append('roll_call_id', rollCallId);
 
 	const response = await fetch(`${API_BASE}/verify/quick`, {
 		method: 'POST',
@@ -362,11 +396,13 @@ export async function verifyFace(locationId: string, imageData: string): Promise
 // ============================================================================
 
 export interface RecordVerificationRequest {
-	rollcall_id: string;
-	location_id: string;
 	inmate_id: string;
-	verification_method: 'face_recognition' | 'manual_override';
-	confidence_score?: number;
+	location_id: string;
+	status: 'verified' | 'not_found' | 'wrong_location' | 'manual' | 'pending';
+	confidence: number;
+	is_manual_override?: boolean;
+	manual_override_reason?: string;
+	photo_uri?: string;
 	notes?: string;
 }
 
@@ -381,8 +417,11 @@ export interface VerificationRecord {
 	notes?: string;
 }
 
-export async function recordVerification(data: RecordVerificationRequest): Promise<VerificationRecord> {
-	return fetchAPI<VerificationRecord>(`/rollcalls/${data.rollcall_id}/verification`, {
+export async function recordVerification(
+	rollcallId: string,
+	data: RecordVerificationRequest
+): Promise<VerificationRecord> {
+	return fetchAPI<VerificationRecord>(`/rollcalls/${rollcallId}/verification`, {
 		method: 'POST',
 		body: JSON.stringify(data)
 	});

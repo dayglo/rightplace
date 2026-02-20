@@ -1,6 +1,7 @@
 """
 Locations CRUD endpoints for Prison Roll Call API.
 """
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
@@ -63,13 +64,26 @@ class RouteRequest(BaseModel):
 
 
 @router.get("/locations", response_model=list[Location])
-async def list_locations(repo: LocationRepository = Depends(get_location_repo)):
+async def list_locations(
+    type: Optional[str] = None,
+    repo: LocationRepository = Depends(get_location_repo)
+):
     """
-    Get all locations.
-    
+    Get all locations, optionally filtered by type.
+
+    Args:
+        type: Optional location type to filter by (prison, houseblock, wing, etc.)
+
     Returns:
-        list[Location]: List of all locations
+        list[Location]: List of locations
     """
+    if type:
+        from app.models.location import LocationType
+        try:
+            location_type = LocationType(type)
+            return repo.get_by_type(location_type)
+        except ValueError:
+            return []
     return repo.get_all()
 
 

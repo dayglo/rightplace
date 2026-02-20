@@ -1,13 +1,14 @@
 import type { PageLoad } from './$types';
-import { getRollCall, getLocations, getInmates } from '$lib/services/api';
+import { getRollCall, getLocations, getInmates, getRollCallVerifications } from '$lib/services/api';
 import { error } from '@sveltejs/kit';
 
 export const load: PageLoad = async ({ params }) => {
 	try {
-		const [rollCall, locations, inmates] = await Promise.all([
+		const [rollCall, locations, inmates, existingVerifications] = await Promise.all([
 			getRollCall(params.id),
 			getLocations(),
-			getInmates()
+			getInmates(),
+			getRollCallVerifications(params.id)
 		]);
 
 		// Check that roll call is in progress
@@ -18,7 +19,8 @@ export const load: PageLoad = async ({ params }) => {
 		return {
 			rollCall,
 			locations,
-			inmates
+			inmates,
+			existingVerifications
 		};
 	} catch (err) {
 		console.error('Failed to load active roll call:', err);

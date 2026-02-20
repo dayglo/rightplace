@@ -53,7 +53,22 @@ source .venv/bin/activate
 ```
 
 ### Test-Driven Development (TDD)
-This project **strictly follows TDD**. See `.clinerules/tdd-iteration-loop.md` for the complete 12-step cycle.
+This project **strictly follows TDD**. Follow the 12-step cycle below:
+
+```
+1. SELECT     → Pick next unchecked TODO item
+2. UNDERSTAND → Read design doc section
+3. WRITE TESTS → Create failing tests (RED)
+4. RUN TESTS  → Verify they fail correctly
+5. IMPLEMENT  → Minimum code to pass
+6. RUN TESTS  → Achieve GREEN
+7. ITERATE    → Repeat 5-6 until all pass
+8. REFACTOR   → Clean code (tests stay green)
+9. VALIDATE   → Run full test suite
+10. UPDATE    → Mark TODO checkboxes
+11. COMMIT    → Git commit with message
+12. REPEAT    → Back to step 1
+```
 
 **Core TDD Rules:**
 1. **Never write implementation before tests**
@@ -61,6 +76,48 @@ This project **strictly follows TDD**. See `.clinerules/tdd-iteration-loop.md` f
 3. Refactor only when tests are green
 4. All tests must pass before committing
 5. Code coverage ≥80%
+
+**Quality Gates Before Commit:**
+- All tests pass
+- Code coverage ≥80%
+- No linting errors
+- Type checking passes
+- Keep functions <50 lines
+
+## Claude Code Skills & Automation
+
+### Skills (Invokable Workflows)
+
+This project includes custom Claude Code skills for common workflows. See `skills/README.md` for details.
+
+**Available skills:**
+- `/start-servers` - Start backend and frontend with health checks
+- `/test-ui` - Run agent-browser UI testing workflow
+- `/db-inspect` - Quick database health check and statistics
+
+**Installation:**
+```bash
+# Install globally for use in all Claude Code sessions
+mkdir -p ~/.config/claude/skills
+cp skills/*.md ~/.config/claude/skills/
+```
+
+**Usage:**
+Just type the skill name in Claude Code:
+```
+/start-servers
+```
+
+### Hooks (Automatic Validations)
+
+Hooks provide automatic safety checks. See `HOOKS_SETUP.md` for complete configuration.
+
+**Recommended hooks:**
+- `before_bash` - Warn when running Python without venv activated
+- `after_edit` - Remind to run tests after editing code files
+
+**Quick setup:**
+Edit `~/.config/claude/settings.json` and add hooks from `HOOKS_SETUP.md`.
 
 ## Common Commands
 
@@ -155,7 +212,7 @@ npm install  # or pnpm install or yarn
 
 ### agent-browser (E2E Testing)
 
-The web UI uses `agent-browser` for automated browser testing. See `.clinerules/agent-browser-skill.md` for complete documentation.
+The web UI uses `agent-browser` for automated browser testing.
 
 **Basic workflow:**
 ```bash
@@ -166,6 +223,188 @@ agent-browser screenshot page.png      # Capture screenshot
 agent-browser console                  # Check for errors
 agent-browser close
 ```
+
+**Essential Commands:**
+```bash
+# Navigation
+agent-browser open <url>
+agent-browser back/forward/reload
+
+# Interaction (always use refs from snapshot)
+agent-browser click @e1
+agent-browser fill @e2 "text"
+agent-browser press Enter
+agent-browser hover @e3
+
+# Information
+agent-browser snapshot -i -c           # Interactive + compact
+agent-browser get text @e1
+agent-browser get url
+agent-browser is visible @e1
+
+# Debugging
+agent-browser screenshot --full        # Full page screenshot
+agent-browser console                  # Console logs
+agent-browser errors                   # JS errors
+agent-browser --headed open <url>      # Show browser window
+```
+
+**Best Practices:**
+- Always use refs (`@e1`, `@e2`) instead of CSS selectors
+- Run `snapshot -i` first to get interactive elements
+- Use `--json` flag for machine-readable output
+- Check console/errors after each interaction
+- Use `--headed` mode for debugging visual issues
+
+## Server Management
+
+### Starting Services
+
+**Start everything (recommended):**
+```bash
+./start-project.sh
+```
+This starts both backend (port 8000) and web UI (port 5173), logging to `log/` directory.
+
+**Start individually:**
+```bash
+# Backend only
+cd server && ./start-backend.sh
+
+# Web UI only
+cd web-ui && ./start-frontend.sh
+```
+
+### Accessing Services
+- **Web UI**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs (Swagger)
+- **API Docs**: http://localhost:8000/redoc (ReDoc)
+
+### Stopping Services
+```bash
+# Stop backend
+fuser -k 8000/tcp
+
+# Stop web UI
+fuser -k 5173/tcp
+
+# Stop everything
+fuser -k 8000/tcp 5173/tcp
+```
+
+### View Logs
+```bash
+# Backend logs
+tail -f log/server.log
+
+# Web UI logs
+tail -f log/web-ui.log
+
+# Both simultaneously
+tail -f log/*.log
+```
+
+### Health Checks
+```bash
+# Check backend
+curl http://localhost:8000/health
+
+# Check web UI
+curl http://localhost:5173
+```
+
+## Database Access
+
+### Production Database
+- **Path**: `server/data/prison_rollcall.db`
+- **Type**: SQLite 3
+
+### Quick Access Methods
+
+**SQLite CLI:**
+```bash
+cd server
+sqlite3 data/prison_rollcall.db
+# Commands: .tables, .schema tablename, SELECT..., .quit
+```
+
+**Python (with venv):**
+```bash
+cd server && source .venv/bin/activate
+python -c "
+import sqlite3
+conn = sqlite3.connect('data/prison_rollcall.db')
+conn.row_factory = sqlite3.Row
+cursor = conn.execute('SELECT COUNT(*) FROM inmates')
+print(cursor.fetchone()[0])
+"
+```
+
+**Quick Stats:**
+```bash
+cd server && source .venv/bin/activate && python -c "
+import sqlite3
+conn = sqlite3.connect('data/prison_rollcall.db')
+print('=== Database Stats ===')
+for table in ['inmates', 'locations', 'schedule_entries', 'roll_calls', 'verifications']:
+    try:
+        count = conn.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
+        print(f'{table}: {count}')
+    except: pass
+"
+```
+
+### Key Tables
+- `inmates` - Prisoner records with home_cell_id
+- `locations` - Location hierarchy (houseblocks, wings, landings, cells)
+- `location_connections` - Walking distances between locations
+- `schedule_entries` - Prisoner schedules/regimes
+- `roll_calls` - Roll call records
+- `verifications` - Individual verification records
+- `embeddings` - Face embeddings for enrolled prisoners
+
+### Location Types
+`houseblock`, `wing`, `landing`, `cell`, `healthcare`, `education`, `workshop`, `gym`
+
+## Worktree Best Practices
+
+When working in a worktree (not main repo):
+
+### Identifying Context
+```bash
+# Check current worktree
+pwd  # /home/george_cairns/code/rightplace-worktrees/feature-name
+
+# List all worktrees
+git worktree list
+
+# Show current branch
+git branch --show-current
+```
+
+### Using Shared Resources
+```bash
+# Use shared venv (don't create a new one)
+source /home/george_cairns/code/rightplace/server/.venv/bin/activate
+
+# Install web UI dependencies if needed
+cd web-ui && npm install
+```
+
+### Workflow
+1. Create worktree: `./scripts/worktree-new.sh feature-name`
+2. Develop and commit freely (isolated branch)
+3. Push: `git push -u origin feature-name`
+4. Create PR and merge to main
+5. Cleanup: `./scripts/worktree-remove.sh feature-name`
+
+### Important Notes
+- Database is shared by default (unless explicitly copied)
+- Keep worktrees short-lived (days, not weeks)
+- Sync with main regularly: `git fetch origin && git rebase origin/main`
+- One task per worktree
+- Remove worktrees after merging
 
 ## Key Design Documents
 

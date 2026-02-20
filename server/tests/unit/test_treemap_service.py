@@ -390,6 +390,9 @@ def test_determine_location_status_green_all_verified(
         estimated_times_map,
         [verification1, verification2],
         timestamp,
+        inmate_count=2,
+        verified_count=2,
+        failed_count=0,
     )
 
     assert status == "green"
@@ -437,6 +440,9 @@ def test_determine_location_status_red_any_failed(
         estimated_times_map,
         [verification1, verification2],
         timestamp,
+        inmate_count=2,
+        verified_count=1,
+        failed_count=1,
     )
 
     assert status == "red"

@@ -3,7 +3,7 @@ Treemap data models.
 
 Defines models for hierarchical treemap visualization of rollcall status.
 """
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -48,3 +48,19 @@ class TreemapResponse(BaseModel):
     type: str
     value: int
     children: List[TreemapNode]
+
+
+class TreemapBatchRequest(BaseModel):
+    """Request for batch treemap data at multiple timestamps."""
+
+    timestamps: List[str]  # ISO format timestamps
+    prison_ids: Optional[List[str]] = None
+    rollcall_ids: Optional[List[str]] = None
+    include_empty: bool = False
+    occupancy_mode: str = "scheduled"
+
+
+class TreemapBatchResponse(BaseModel):
+    """Response containing treemap data for multiple timestamps."""
+
+    data: Dict[str, TreemapResponse]

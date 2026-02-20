@@ -110,11 +110,14 @@ class TreemapService:
         for rollcall in rollcalls:
             estimated_times_map[rollcall.id] = self.calculate_estimated_times(rollcall)
 
-        # Fetch all verifications for all rollcalls (if any specified)
+        # Fetch all verifications for all rollcalls up to the given timestamp
+        # This filters verifications to only show those that occurred BEFORE the timestamp
         all_verifications = []
         if rollcall_ids:
             for rollcall_id in rollcall_ids:
-                verifications = self.verification_repo.get_by_roll_call(rollcall_id)
+                verifications = self.verification_repo.get_by_roll_call_before_timestamp(
+                    rollcall_id, timestamp
+                )
                 all_verifications.extend(verifications)
 
         # PERFORMANCE OPTIMIZATION: Build verification hash map for O(1) lookups
@@ -262,15 +265,18 @@ class TreemapService:
         estimated_times_map: Dict[str, Dict[str, datetime]],
         verifications: List[Verification],
         timestamp: datetime,
+        inmate_count: int = 0,
+        verified_count: int = 0,
+        failed_count: int = 0,
     ) -> str:
         """
         Determine status of a location at a given timestamp.
 
         Status rules:
-        - GREY: Location not in any rollcall route
-        - AMBER: Rollcall scheduled at timestamp but not completed
-        - GREEN: Rollcall completed AND all inmates verified
-        - RED: Rollcall completed BUT any inmate failed verification
+        - RED: Any inmate failed verification (not_found or wrong_location)
+        - GREEN: All inmates verified (verified_count == inmate_count)
+        - AMBER: Some inmates verified (partial progress) OR scheduled but not started
+        - GREY: Location not in any rollcall route or no inmates
 
         Args:
             location: Location to check
@@ -278,16 +284,28 @@ class TreemapService:
             estimated_times_map: Map of rollcall_id -> location_id -> estimated time
             verifications: All verification records
             timestamp: Point in time to check
+            inmate_count: Total inmates expected at this location
+            verified_count: Number of inmates verified so far
+            failed_count: Number of failed verifications
 
         Returns:
             Status string: grey, amber, green, red
         """
+        # Priority 1: Failed verifications = RED
+        if failed_count > 0:
+            return "red"
+
+        # Priority 2: All verified = GREEN
+        if inmate_count > 0 and verified_count == inmate_count:
+            return "green"
+
+        # Priority 3: Partial verification = AMBER
+        if verified_count > 0 and verified_count < inmate_count:
+            return "amber"
+
         # Check if location is in any rollcall route
         location_in_route = False
         is_scheduled = False
-        is_completed = False
-        has_failed_verification = False
-        has_any_verification = False
 
         for rollcall in rollcalls:
             estimated_times = estimated_times_map.get(rollcall.id, {})
@@ -303,40 +321,8 @@ class TreemapService:
                 if time_diff <= 10:
                     is_scheduled = True
 
-            # Check verifications for this location and rollcall (regardless of route)
-            location_verifications = [
-                v for v in verifications
-                if v.location_id == location.id and v.roll_call_id == rollcall.id
-            ]
-
-            if location_verifications:
-                has_any_verification = True
-                # Check if any verification failed
-                for v in location_verifications:
-                    if v.status in [
-                        VerificationStatus.NOT_FOUND,
-                        VerificationStatus.WRONG_LOCATION,
-                    ]:
-                        has_failed_verification = True
-                        break
-
-                # If we have verifications, mark as completed
-                # (verifications are recorded at actual locations, not route locations)
-                is_completed = True
-
-        # Determine status based on rules
-        # Priority 1: If we have verifications, show status based on them
-        if has_failed_verification:
-            return "red"
-
-        if has_any_verification:
-            return "green"
-
-        # Priority 2: If location is in route but no verifications yet
-        if not location_in_route:
-            return "grey"
-
-        if is_scheduled or (location_in_route and not is_completed):
+        # Priority 4: Scheduled but not started = AMBER
+        if is_scheduled or (location_in_route and inmate_count > 0):
             return "amber"
 
         return "grey"
@@ -592,6 +578,9 @@ class TreemapService:
                     estimated_times_map,
                     verifications,
                     timestamp,
+                    inmate_count=len(inmates),  # Direct inmate count (not aggregated)
+                    verified_count=verified_count,
+                    failed_count=failed_count,
                 )
                 all_statuses.append(direct_status)
 

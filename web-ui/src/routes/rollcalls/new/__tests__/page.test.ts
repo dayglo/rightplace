@@ -11,9 +11,20 @@ describe('Create Roll Call Page', () => {
 	const mockData = {
 		locations: [
 			{
+				id: 'prison-1',
+				name: 'HMP Test Prison',
+				type: 'prison',
+				building: 'Main',
+				floor: 0,
+				capacity: 1000,
+				created_at: '2026-01-01T00:00:00',
+				updated_at: '2026-01-01T00:00:00'
+			},
+			{
 				id: 'cell-1',
 				name: 'Cell A-101',
 				type: 'cell',
+				parent_id: 'prison-1',
 				building: 'Main',
 				floor: 1,
 				capacity: 1,
@@ -24,6 +35,7 @@ describe('Create Roll Call Page', () => {
 				id: 'cell-2',
 				name: 'Cell A-102',
 				type: 'cell',
+				parent_id: 'prison-1',
 				building: 'Main',
 				floor: 1,
 				capacity: 1,
@@ -34,6 +46,7 @@ describe('Create Roll Call Page', () => {
 				id: 'yard-1',
 				name: 'Yard',
 				type: 'yard',
+				parent_id: 'prison-1',
 				building: 'Outdoor',
 				floor: 0,
 				capacity: 100,
@@ -83,9 +96,11 @@ describe('Create Roll Call Page', () => {
 	it('should display available cell locations', () => {
 		render(Page, { props: { data: mockData } });
 
-		expect(screen.getByText('Cell A-101')).toBeInTheDocument();
-		expect(screen.getByText('Cell A-102')).toBeInTheDocument();
-		// Yard should not be shown (filtered to cells only)
+		// Location names now include the prison prefix
+		expect(screen.getByText('HMP Test Prison > Cell A-101')).toBeInTheDocument();
+		expect(screen.getByText('HMP Test Prison > Cell A-102')).toBeInTheDocument();
+		// Yard is also shown (not filtered to cells only)
+		expect(screen.getByText('HMP Test Prison > Yard')).toBeInTheDocument();
 	});
 
 	it('should show inmate count for each location', () => {

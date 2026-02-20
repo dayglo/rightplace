@@ -4,6 +4,7 @@ Integration tests for Roll Call API endpoints.
 Tests CRUD operations, status transitions, and workflow management.
 """
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
 
@@ -361,15 +362,15 @@ class TestGenerateRollCallEndpoint:
         
         # Generate roll call
         generate_payload = {
-            "location_id": houseblock_id,
+            "location_ids": [houseblock_id],
             "scheduled_at": "2026-01-29T14:00:00",
         }
         response = client.post("/api/v1/rollcalls/generate", json=generate_payload)
         
         assert response.status_code == 200
         data = response.json()
-        assert data["location_id"] == houseblock_id
-        assert data["location_name"] == "Houseblock 1"
+        assert houseblock_id in data["location_ids"]
+        assert "Houseblock 1" in data["location_names"]
         assert "route" in data
         assert "summary" in data
         assert data["summary"]["total_locations"] >= 1
@@ -377,7 +378,7 @@ class TestGenerateRollCallEndpoint:
     def test_generate_rollcall_not_found(self, client):
         """Should return 404 for non-existent location."""
         generate_payload = {
-            "location_id": "non-existent-id",
+            "location_ids": ["non-existent-id"],
             "scheduled_at": "2026-01-29T14:00:00",
         }
         response = client.post("/api/v1/rollcalls/generate", json=generate_payload)
@@ -406,11 +407,11 @@ class TestGenerateRollCallEndpoint:
             client.post("/api/v1/locations", json=cell_payload)
         
         generate_payload = {
-            "location_id": houseblock_id,
+            "location_ids": [houseblock_id],
             "scheduled_at": "2026-01-29T14:00:00",
         }
         response = client.post("/api/v1/rollcalls/generate", json=generate_payload)
-        
+
         data = response.json()
         # All cells should be in route even though empty
         assert len(data["route"]) == 2
@@ -451,7 +452,7 @@ class TestExpectedPrisonersEndpoint:
         
         # Create inmate
         inmate_payload = {
-            "inmate_number": "Z001",
+            "inmate_number": f"Z{uuid.uuid4().hex[:6].upper()}",
             "first_name": "Test",
             "last_name": "Prisoner",
             "date_of_birth": "1985-06-15",
@@ -481,7 +482,7 @@ class TestVerificationRecording:
         """Should record verification for roll call."""
         # Create inmate first (required by foreign key constraint)
         inmate_payload = {
-            "inmate_number": "A12345",
+            "inmate_number": f"A{uuid.uuid4().hex[:6].upper()}",
             "first_name": "John",
             "last_name": "Doe",
             "date_of_birth": "1990-01-01",
@@ -493,8 +494,8 @@ class TestVerificationRecording:
         
         # Create location first (required by foreign key constraint)
         location_payload = {
-            "name": "Cell Block A",
-            "type": "block",
+            "name": f"Cell Block A-{uuid.uuid4().hex[:6]}",
+            "type": "houseblock",
             "building": "Main",
         }
         location_response = client.post("/api/v1/locations", json=location_payload)
@@ -535,7 +536,7 @@ class TestVerificationRecording:
         """Should record manual override verification."""
         # Create inmate first (required by foreign key constraint)
         inmate_payload = {
-            "inmate_number": "A12346",
+            "inmate_number": f"B{uuid.uuid4().hex[:6].upper()}",
             "first_name": "Jane",
             "last_name": "Smith",
             "date_of_birth": "1991-02-02",
@@ -547,8 +548,8 @@ class TestVerificationRecording:
         
         # Create location first (required by foreign key constraint)
         location_payload = {
-            "name": "Cell Block B",
-            "type": "block",
+            "name": f"Cell Block B-{uuid.uuid4().hex[:6]}",
+            "type": "houseblock",
             "building": "Main",
         }
         location_response = client.post("/api/v1/locations", json=location_payload)
