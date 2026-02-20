@@ -99,6 +99,7 @@ def init_db(conn: sqlite3.Connection) -> None:
         "004_schedule_entries.sql",
         "005_home_cell_id.sql",
         "006_audit_enhancements.sql",
+        "007_performance_indexes.sql",
     ]
     
     for migration_file in migrations:

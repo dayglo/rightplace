@@ -124,6 +124,31 @@ class VerificationRepository:
 
         return [self._row_to_verification(row) for row in rows]
 
+    def get_by_roll_call_before_timestamp(
+        self, roll_call_id: str, timestamp: datetime
+    ) -> list[Verification]:
+        """
+        Retrieve verifications for a roll call before a specific timestamp.
+
+        Args:
+            roll_call_id: Roll call ID
+            timestamp: Only return verifications before this time
+
+        Returns:
+            List of verifications for the specified roll call before the timestamp
+        """
+        cursor = self.conn.execute(
+            """
+            SELECT * FROM verifications
+            WHERE roll_call_id = ? AND timestamp <= ?
+            ORDER BY timestamp
+            """,
+            (roll_call_id, timestamp.isoformat()),
+        )
+        rows = cursor.fetchall()
+
+        return [self._row_to_verification(row) for row in rows]
+
     def get_by_inmate(self, inmate_id: str) -> list[Verification]:
         """
         Retrieve all verifications for an inmate.

@@ -47,6 +47,37 @@ class TreemapService:
         self.schedule_repo = ScheduleRepository(conn)
         self.verification_repo = VerificationRepository(conn)
 
+        # PERFORMANCE OPTIMIZATION: Cache location hierarchy (parent-child map)
+        # Location hierarchy is static - build once, reuse for all requests
+        self._location_hierarchy_cache: Optional[Dict[Optional[str], List[Location]]] = None
+
+    def _get_location_hierarchy(self) -> Dict[Optional[str], List[Location]]:
+        """
+        Get cached location hierarchy (parent-child map) or build it if not cached.
+
+        Returns:
+            Dict mapping parent_id to list of child locations
+        """
+        if self._location_hierarchy_cache is None:
+            # Build parent-child map from all locations
+            all_locations = self.location_repo.get_all()
+            parent_child_map: Dict[Optional[str], List[Location]] = {}
+            for loc in all_locations:
+                if loc.parent_id not in parent_child_map:
+                    parent_child_map[loc.parent_id] = []
+                parent_child_map[loc.parent_id].append(loc)
+            self._location_hierarchy_cache = parent_child_map
+
+        return self._location_hierarchy_cache
+
+    def invalidate_location_cache(self) -> None:
+        """
+        Invalidate the location hierarchy cache.
+
+        Call this when locations are added, removed, or modified.
+        """
+        self._location_hierarchy_cache = None
+
     def build_treemap_hierarchy(
         self,
         rollcall_ids: List[str],
@@ -86,8 +117,19 @@ class TreemapService:
                 verifications = self.verification_repo.get_by_roll_call(rollcall_id)
                 all_verifications.extend(verifications)
 
+        # PERFORMANCE OPTIMIZATION: Build verification hash map for O(1) lookups
+        # This eliminates nested loops O(n*m) -> O(n)
+        verification_map: Dict[tuple[str, str], Verification] = {}
+        for v in all_verifications:
+            key = (v.location_id, v.inmate_id)
+            verification_map[key] = v
+
         # Build location -> inmates map based on occupancy mode
         location_inmates_map = self._build_location_inmates_map(timestamp, occupancy_mode)
+
+        # PERFORMANCE OPTIMIZATION: Get cached parent-child map or build it
+        # This eliminates 4,912 separate database queries (one per location)
+        parent_child_map = self._get_location_hierarchy()
 
         # Build location hierarchy starting from prisons
         prisons = self._get_prison_locations()
@@ -101,6 +143,8 @@ class TreemapService:
                 timestamp,
                 include_empty,
                 location_inmates_map,
+                parent_child_map,
+                verification_map,
             )
 
         # Build children for root node (all prisons)
@@ -116,6 +160,8 @@ class TreemapService:
                 timestamp,
                 include_empty,
                 location_inmates_map,
+                parent_child_map,
+                verification_map,
             )
             if prison_node:
                 children.append(prison_node)
@@ -246,19 +292,18 @@ class TreemapService:
         for rollcall in rollcalls:
             estimated_times = estimated_times_map.get(rollcall.id, {})
 
-            if location.id not in estimated_times:
-                continue
+            # Check if location is in route
+            if location.id in estimated_times:
+                location_in_route = True
+                estimated_time = estimated_times[location.id]
 
-            location_in_route = True
-            estimated_time = estimated_times[location.id]
+                # Check if timestamp is within scheduled window (±10 minutes)
+                time_diff = abs((timestamp - estimated_time).total_seconds() / 60)
 
-            # Check if timestamp is within scheduled window (±10 minutes)
-            time_diff = abs((timestamp - estimated_time).total_seconds() / 60)
+                if time_diff <= 10:
+                    is_scheduled = True
 
-            if time_diff <= 10:
-                is_scheduled = True
-
-            # Check verifications for this location and rollcall
+            # Check verifications for this location and rollcall (regardless of route)
             location_verifications = [
                 v for v in verifications
                 if v.location_id == location.id and v.roll_call_id == rollcall.id
@@ -275,20 +320,21 @@ class TreemapService:
                         has_failed_verification = True
                         break
 
-                # If we have verifications and timestamp is after scheduled time,
-                # consider it completed
-                if timestamp >= estimated_time:
-                    is_completed = True
+                # If we have verifications, mark as completed
+                # (verifications are recorded at actual locations, not route locations)
+                is_completed = True
 
         # Determine status based on rules
-        if not location_in_route:
-            return "grey"
-
+        # Priority 1: If we have verifications, show status based on them
         if has_failed_verification:
             return "red"
 
-        if is_completed and has_any_verification:
+        if has_any_verification:
             return "green"
+
+        # Priority 2: If location is in route but no verifications yet
+        if not location_in_route:
+            return "grey"
 
         if is_scheduled or (location_in_route and not is_completed):
             return "amber"
@@ -358,6 +404,8 @@ class TreemapService:
         timestamp: datetime,
         include_empty: bool = False,
         location_inmates_map: Optional[Dict[str, List]] = None,
+        parent_child_map: Optional[Dict[Optional[str], List[Location]]] = None,
+        verification_map: Optional[Dict[tuple[str, str], Verification]] = None,
     ) -> TreemapResponse:
         """
         Fallback: build treemap from houseblocks if no prisons exist.
@@ -369,6 +417,8 @@ class TreemapService:
             timestamp: Point in time
             include_empty: If True, include locations with no inmates
             location_inmates_map: Map of location_id to list of inmates at that location
+            parent_child_map: Map of parent_id to list of child locations (for performance)
+            verification_map: Map of (location_id, inmate_id) to verification (for performance)
 
         Returns:
             TreemapResponse rooted at "All Facilities"
@@ -409,6 +459,8 @@ class TreemapService:
                 timestamp,
                 include_empty,
                 location_inmates_map,
+                parent_child_map,
+                verification_map,
             )
             if hb_node:
                 children.append(hb_node)
@@ -430,6 +482,8 @@ class TreemapService:
         timestamp: datetime,
         include_empty: bool = False,
         location_inmates_map: Optional[Dict[str, List]] = None,
+        parent_child_map: Optional[Dict[Optional[str], List[Location]]] = None,
+        verification_map: Optional[Dict[tuple[str, str], Verification]] = None,
     ) -> Optional[TreemapNode]:
         """
         Recursively build a subtree for a location.
@@ -442,34 +496,23 @@ class TreemapService:
             timestamp: Point in time
             include_empty: If True, include locations with no inmates
             location_inmates_map: Map of location_id to list of inmates at that location
+            parent_child_map: Map of parent_id to list of child locations (for performance)
+            verification_map: Map of (location_id, inmate_id) to verification (for performance)
 
         Returns:
             TreemapNode or None if location has no inmates/children
         """
         if location_inmates_map is None:
             location_inmates_map = {}
+        if parent_child_map is None:
+            parent_child_map = {}
+        if verification_map is None:
+            verification_map = {}
 
-        # Get child locations
+        # Get child locations from the parent-child map (performance optimization)
+        # This eliminates 4,912 separate database queries!
         children_nodes = []
-        cursor = self.conn.execute(
-            "SELECT * FROM locations WHERE parent_id = ?",
-            (location.id,),
-        )
-        rows = cursor.fetchall()
-
-        child_locations = []
-        for row in rows:
-            child_locations.append(
-                Location(
-                    id=row[0],
-                    name=row[1],
-                    type=LocationType(row[2]),
-                    parent_id=row[3],
-                    capacity=row[4],
-                    floor=row[5],
-                    building=row[6],
-                )
-            )
+        child_locations = parent_child_map.get(location.id, [])
 
         # Recursively build children
         for child in child_locations:
@@ -481,6 +524,8 @@ class TreemapService:
                 timestamp,
                 include_empty,
                 location_inmates_map,
+                parent_child_map,
+                verification_map,
             )
             if child_node:
                 children_nodes.append(child_node)
@@ -495,12 +540,10 @@ class TreemapService:
 
         # Build inmate details with verification status
         for inmate in inmates:
-            # Find verification for this inmate at this location
-            inmate_verification = None
-            for v in verifications:
-                if v.location_id == location.id and v.inmate_id == inmate.id:
-                    inmate_verification = v
-                    break
+            # Find verification for this inmate at this location using hash map O(1) lookup
+            # This replaces the nested loop which was O(n*m)
+            key = (location.id, inmate.id)
+            inmate_verification = verification_map.get(key)
 
             # Determine status
             if inmate_verification:

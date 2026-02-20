@@ -3,6 +3,8 @@
 -- Created: January 2025
 
 -- Add tracking columns to audit_log
+-- Note: ALTER TABLE ADD COLUMN is not idempotent in SQLite
+-- This migration should only be run once on a fresh database
 ALTER TABLE audit_log ADD COLUMN ip_address TEXT;
 ALTER TABLE audit_log ADD COLUMN user_agent TEXT;
 

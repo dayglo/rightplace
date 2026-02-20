@@ -78,7 +78,7 @@ def sample_location(location_repo):
     return location_repo.create(
         LocationCreate(
             name="Cell Block A",
-            type=LocationType.BLOCK,
+            type=LocationType.HOUSEBLOCK,
             building="Main",
         )
     )
@@ -230,6 +230,54 @@ class TestVerificationRepositoryRead:
 
         verifications = verification_repo.get_by_roll_call(sample_rollcall.id)
         assert len(verifications) == 2
+
+    def test_get_by_roll_call_before_timestamp(
+        self,
+        verification_repo,
+        sample_rollcall,
+        sample_inmate,
+        sample_location,
+        db_conn,
+    ):
+        """Should retrieve only verifications before a specific timestamp."""
+        from datetime import timedelta
+        import time
+
+        # Create first verification
+        v1 = verification_repo.create(
+            roll_call_id=sample_rollcall.id,
+            inmate_id=sample_inmate.id,
+            location_id=sample_location.id,
+            status=VerificationStatus.VERIFIED,
+            confidence=0.89,
+        )
+
+        # Wait a moment to ensure different timestamps
+        time.sleep(0.1)
+        cutoff_time = datetime.now()
+        time.sleep(0.1)
+
+        # Create second verification after cutoff
+        v2 = verification_repo.create(
+            roll_call_id=sample_rollcall.id,
+            inmate_id=sample_inmate.id,
+            location_id=sample_location.id,
+            status=VerificationStatus.NOT_FOUND,
+            confidence=0.75,
+        )
+
+        # Should get only the first verification
+        verifications = verification_repo.get_by_roll_call_before_timestamp(
+            sample_rollcall.id, cutoff_time
+        )
+        assert len(verifications) == 1
+        assert verifications[0].id == v1.id
+
+        # Should get both if cutoff is in the future
+        verifications_all = verification_repo.get_by_roll_call_before_timestamp(
+            sample_rollcall.id, datetime.now() + timedelta(hours=1)
+        )
+        assert len(verifications_all) == 2
 
     def test_get_by_inmate(
         self,

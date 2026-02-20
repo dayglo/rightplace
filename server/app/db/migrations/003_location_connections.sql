@@ -2,6 +2,8 @@
 -- This enables graph-based walking path calculation between locations
 
 -- Add optional coordinates to locations table for map visualization
+-- Note: ALTER TABLE ADD COLUMN is not idempotent in SQLite
+-- This migration should only be run once on a fresh database
 ALTER TABLE locations ADD COLUMN x_coord REAL;
 ALTER TABLE locations ADD COLUMN y_coord REAL;
 

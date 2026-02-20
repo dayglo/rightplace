@@ -142,13 +142,18 @@ class TestDatabaseInitialization:
             "idx_inmates_number",
             "idx_locations_type",
             "idx_locations_building",
+            "idx_locations_parent_id",  # Migration 007
             "idx_rollcalls_status",
             "idx_rollcalls_scheduled",
             "idx_verifications_rollcall",
             "idx_verifications_inmate",
             "idx_verifications_timestamp",
+            "idx_verifications_location",  # Migration 007
+            "idx_verifications_rollcall_location_inmate",  # Migration 007
             "idx_audit_timestamp",
             "idx_audit_action",
+            "idx_audit_user",  # Migration 006
+            "idx_audit_entity",  # Migration 006
         ]
 
         for index in expected_indexes:
