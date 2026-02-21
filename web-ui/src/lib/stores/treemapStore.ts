@@ -300,21 +300,25 @@ function createTreemapStore() {
 				if (!response.ok) throw new Error('Failed to fetch rollcalls');
 				const rollcalls = await response.json();
 
-				// Filter to show only rollcalls active at the selected timestamp
+				// Filter to show rollcalls relevant to the selected timestamp
 				const filteredRollcalls = rollcalls.filter((rc: any) => {
 					const scheduledAt = new Date(rc.scheduled_at);
 					const completedAt = rc.completed_at ? new Date(rc.completed_at) : null;
 					const startedAt = rc.started_at ? new Date(rc.started_at) : null;
 
+					// Show rollcalls from the same day as the selected timestamp
+					const sameDay = scheduledAt.toDateString() === currentTimestamp.toDateString();
+					if (!sameDay) return false;
+
 					// Include if:
-					// - Scheduled at or before timestamp AND (not completed OR completed after timestamp)
-					// - Or if in_progress/scheduled and within 24h window
+					// - Completed: show if timestamp is after scheduled time (to view results)
+					// - In progress: show if started before timestamp
+					// - Scheduled: show if within 24h of timestamp
 					if (completedAt) {
-						return scheduledAt <= currentTimestamp && completedAt >= currentTimestamp;
+						return scheduledAt <= currentTimestamp;
 					} else if (startedAt) {
 						return startedAt <= currentTimestamp;
 					} else {
-						// Scheduled but not started - show if within 24h window
 						const timeDiff = Math.abs(currentTimestamp.getTime() - scheduledAt.getTime());
 						return timeDiff < 24 * 60 * 60 * 1000;
 					}
