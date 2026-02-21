@@ -133,7 +133,7 @@ const initialState: TreemapState = {
 	liveMode: false,
 	includeEmpty: false,
 	filterToRoute: true, // Default to filtering to only show locations in rollcall routes
-	occupancyMode: 'home_cell', // Default to home_cell mode until schedule data is populated
+	occupancyMode: 'scheduled', // Default to scheduled location mode
 	zoomPath: [],
 	availablePrisons: [],
 	selectedPrisonIds: [],

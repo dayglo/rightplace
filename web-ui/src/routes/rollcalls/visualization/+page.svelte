@@ -24,6 +24,11 @@
 		try {
 			await treemapStore.fetchPrisons();
 			await treemapStore.fetchRollcalls();
+			// Default to all rollcalls selected
+			const allRollcallIds = $treemapStore.availableRollcalls.map(rc => rc.id);
+			if (allRollcallIds.length > 0) {
+				treemapStore.setRollcalls(allRollcallIds);
+			}
 			await treemapStore.fetchData();
 			// Start background prefetch
 			treemapStore.prefetchCache();
