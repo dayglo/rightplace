@@ -108,6 +108,7 @@ interface TreemapState {
 	// Playback state
 	isPlaying: boolean;
 	playbackSpeed: number; // milliseconds between frames
+	playbackStepSeconds: number; // simulation seconds per tick (0 = realtime)
 
 	// Cache configuration
 	cacheRangeHours: number;
@@ -140,6 +141,7 @@ const initialState: TreemapState = {
 	rollcallsLoading: false,
 	isPlaying: false,
 	playbackSpeed: 3000, // 3 seconds between frames to allow API response time
+	playbackStepSeconds: 60, // 1 minute per tick by default
 	cacheRangeHours: 12,
 	cacheStepMinutes: 15,
 	timestampCache: new Map(),
@@ -345,6 +347,11 @@ function createTreemapStore() {
 		// Toggle playback
 		togglePlayback: () => {
 			update(state => ({ ...state, isPlaying: !state.isPlaying }));
+		},
+
+		// Set playback step duration (seconds per tick, 0 = realtime)
+		setPlaybackStep: (seconds: number) => {
+			update(state => ({ ...state, playbackStepSeconds: seconds }));
 		},
 
 		// Step forward by minutes

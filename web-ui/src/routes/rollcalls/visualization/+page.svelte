@@ -43,7 +43,12 @@
 	// Handle playback - use cache when available
 	$: if ($treemapStore.isPlaying && !playInterval) {
 		playInterval = setInterval(() => {
-			treemapStore.stepForward($treemapStore.cacheStepMinutes);
+			// Calculate step: 0 = realtime (playbackSpeed ms = same in sim), otherwise use playbackStepSeconds
+			const stepSeconds = $treemapStore.playbackStepSeconds === 0
+				? $treemapStore.playbackSpeed / 1000  // Realtime: 3 sec real = 3 sec sim
+				: $treemapStore.playbackStepSeconds;
+			const stepMinutes = stepSeconds / 60;
+			treemapStore.stepForward(stepMinutes);
 			const cached = treemapStore.getDataForTimestamp($treemapStore.timestamp);
 			if (cached) {
 				treemapStore.setData(cached);
@@ -546,6 +551,20 @@
 			>
 				{$treemapStore.isPlaying ? '⏸ Pause' : '▶ Play'}
 			</button>
+			<select
+				value={$treemapStore.playbackStepSeconds}
+				on:change={(e) => treemapStore.setPlaybackStep(parseInt(e.currentTarget.value))}
+				class="px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+				title="Playback speed - simulation time per tick"
+			>
+				<option value={0}>Realtime</option>
+				<option value={10}>10 sec</option>
+				<option value={30}>30 sec</option>
+				<option value={60}>1 min</option>
+				<option value={120}>2 min</option>
+				<option value={300}>5 min</option>
+				<option value={600}>10 min</option>
+			</select>
 			<button
 				on:click={() => { treemapStore.stepForward(); treemapStore.fetchRollcalls(); treemapStore.fetchData(); }}
 				class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded"
