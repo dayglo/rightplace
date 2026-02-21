@@ -42,6 +42,10 @@ def get_treemap(
         OccupancyMode.SCHEDULED,
         description="How to determine inmate locations: 'scheduled' uses schedule data, 'home_cell' uses static assignments",
     ),
+    filter_to_route: bool = Query(
+        False,
+        description="Only include locations that are in the selected rollcall routes (and their descendants)",
+    ),
     treemap_service: TreemapService = Depends(get_treemap_service),
 ) -> TreemapResponse:
     """
@@ -93,7 +97,7 @@ def get_treemap(
 
         # Build treemap hierarchy
         treemap_data = treemap_service.build_treemap_hierarchy(
-            rollcall_id_list, timestamp_dt, include_empty, occupancy_mode
+            rollcall_id_list, timestamp_dt, include_empty, occupancy_mode, filter_to_route
         )
 
         return treemap_data

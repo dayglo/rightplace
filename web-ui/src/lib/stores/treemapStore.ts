@@ -88,6 +88,9 @@ interface TreemapState {
 	// Include empty locations
 	includeEmpty: boolean;
 
+	// Filter to only show locations in rollcall routes
+	filterToRoute: boolean;
+
 	// Occupancy mode - how to determine where inmates are
 	occupancyMode: OccupancyMode;
 
@@ -128,6 +131,7 @@ const initialState: TreemapState = {
 	error: null,
 	liveMode: false,
 	includeEmpty: false,
+	filterToRoute: true, // Default to filtering to only show locations in rollcall routes
 	occupancyMode: 'home_cell', // Default to home_cell mode until schedule data is populated
 	zoomPath: [],
 	availablePrisons: [],
@@ -181,6 +185,11 @@ function createTreemapStore() {
 			update(state => ({ ...state, includeEmpty: !state.includeEmpty }));
 		},
 
+		// Toggle filter to route
+		toggleFilterToRoute: () => {
+			update(state => ({ ...state, filterToRoute: !state.filterToRoute }));
+		},
+
 		// Set occupancy mode
 		setOccupancyMode: (mode: OccupancyMode) => {
 			update(state => ({ ...state, occupancyMode: mode }));
@@ -196,6 +205,7 @@ function createTreemapStore() {
 					state.selectedRollcallIds = s.selectedRollcallIds;
 					state.timestamp = s.timestamp;
 					state.includeEmpty = s.includeEmpty;
+					state.filterToRoute = s.filterToRoute;
 					state.occupancyMode = s.occupancyMode;
 					return s;
 				});
@@ -209,6 +219,10 @@ function createTreemapStore() {
 
 				if (state.selectedRollcallIds.length > 0) {
 					params.set('rollcall_ids', state.selectedRollcallIds.join(','));
+					// Only filter to route when rollcalls are selected
+					if (state.filterToRoute) {
+						params.set('filter_to_route', 'true');
+					}
 				}
 
 				const response = await fetch(`${baseUrl}/api/v1/treemap?${params}`);

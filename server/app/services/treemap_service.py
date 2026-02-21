@@ -84,6 +84,7 @@ class TreemapService:
         timestamp: datetime,
         include_empty: bool = False,
         occupancy_mode: OccupancyMode = OccupancyMode.SCHEDULED,
+        filter_to_route: bool = False,
     ) -> TreemapResponse:
         """
         Build hierarchical treemap structure for multiple rollcalls at a given timestamp.
@@ -93,6 +94,7 @@ class TreemapService:
             timestamp: Point in time to show status
             include_empty: If True, include locations with no inmates
             occupancy_mode: How to determine inmate locations (scheduled or home_cell)
+            filter_to_route: If True, only include locations in rollcall routes and their descendants
 
         Returns:
             TreemapResponse with root node and children
@@ -134,6 +136,11 @@ class TreemapService:
         # This eliminates 4,912 separate database queries (one per location)
         parent_child_map = self._get_location_hierarchy()
 
+        # Build allowed locations set if filtering to route
+        allowed_locations: Optional[Set[str]] = None
+        if filter_to_route and rollcalls:
+            allowed_locations = self._build_route_location_set(rollcalls, parent_child_map)
+
         # Build location hierarchy starting from prisons
         prisons = self._get_prison_locations()
 
@@ -165,6 +172,7 @@ class TreemapService:
                 location_inmates_map,
                 parent_child_map,
                 verification_map,
+                allowed_locations,
             )
             if prison_node:
                 children.append(prison_node)
@@ -359,6 +367,57 @@ class TreemapService:
 
         return "grey"
 
+    def _build_route_location_set(
+        self,
+        rollcalls: List[RollCall],
+        parent_child_map: Dict[Optional[str], List[Location]],
+    ) -> Set[str]:
+        """
+        Build set of location IDs that are in the rollcall routes or their descendants/ancestors.
+
+        This is used for filter_to_route to only show relevant locations.
+
+        Args:
+            rollcalls: List of rollcalls to get routes from
+            parent_child_map: Pre-built map of parent_id -> child locations
+
+        Returns:
+            Set of location IDs to include in the filtered treemap
+        """
+        allowed: Set[str] = set()
+
+        # Get all route location IDs
+        route_location_ids: Set[str] = set()
+        for rollcall in rollcalls:
+            for stop in rollcall.route:
+                route_location_ids.add(stop.location_id)
+
+        # For each route location, add it and all descendants
+        def add_descendants(location_id: str) -> None:
+            allowed.add(location_id)
+            children = parent_child_map.get(location_id, [])
+            for child in children:
+                add_descendants(child.id)
+
+        for loc_id in route_location_ids:
+            add_descendants(loc_id)
+
+        # Also add all ancestors (parent chain) so tree structure is complete
+        # Build a reverse lookup: location_id -> location
+        all_locations = self.location_repo.get_all()
+        location_by_id = {loc.id: loc for loc in all_locations}
+
+        def add_ancestors(location_id: str) -> None:
+            loc = location_by_id.get(location_id)
+            if loc and loc.parent_id:
+                allowed.add(loc.parent_id)
+                add_ancestors(loc.parent_id)
+
+        for loc_id in route_location_ids:
+            add_ancestors(loc_id)
+
+        return allowed
+
     def _get_prison_locations(self) -> List[Location]:
         """Get all locations of type PRISON."""
         cursor = self.conn.execute(
@@ -470,6 +529,7 @@ class TreemapService:
         location_inmates_map: Optional[Dict[str, List]] = None,
         parent_child_map: Optional[Dict[Optional[str], List[Location]]] = None,
         verification_map: Optional[Dict[tuple[str, str], Verification]] = None,
+        allowed_locations: Optional[Set[str]] = None,
     ) -> Optional[TreemapNode]:
         """
         Recursively build a subtree for a location.
@@ -495,6 +555,11 @@ class TreemapService:
         if verification_map is None:
             verification_map = {}
 
+        # If filtering to route, skip locations not in the allowed set
+        # (but still process if allowed_locations is None - means no filtering)
+        if allowed_locations is not None and location.id not in allowed_locations:
+            return None
+
         # Get child locations from the parent-child map (performance optimization)
         # This eliminates 4,912 separate database queries!
         children_nodes = []
@@ -512,6 +577,7 @@ class TreemapService:
                 location_inmates_map,
                 parent_child_map,
                 verification_map,
+                allowed_locations,
             )
             if child_node:
                 children_nodes.append(child_node)

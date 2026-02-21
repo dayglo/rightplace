@@ -92,6 +92,13 @@
 		treemapStore.prefetchCache();
 	}
 
+	function handleToggleFilterToRoute() {
+		treemapStore.toggleFilterToRoute();
+		treemapStore.fetchData();
+		treemapStore.invalidateCache();
+		treemapStore.prefetchCache();
+	}
+
 	function handleOccupancyModeChange(event: Event) {
 		const mode = (event.target as HTMLSelectElement).value as 'scheduled' | 'home_cell';
 		treemapStore.setOccupancyMode(mode);
@@ -322,6 +329,19 @@
 				/>
 				<label for="include-empty" class="text-sm text-gray-700">
 					Include empty locations
+				</label>
+			</div>
+
+			<div class="flex items-center gap-2">
+				<input
+					type="checkbox"
+					id="filter-to-route"
+					checked={$treemapStore.filterToRoute}
+					on:change={handleToggleFilterToRoute}
+					class="w-4 h-4"
+				/>
+				<label for="filter-to-route" class="text-sm text-gray-700">
+					Focus on selected rollcall
 				</label>
 			</div>
 		</div>
