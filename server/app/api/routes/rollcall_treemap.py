@@ -86,9 +86,14 @@ def get_treemap(
         else:
             rollcall_id_list = []
 
-        # Parse timestamp
+        # Parse timestamp (handle 'Z' suffix for UTC and make timezone-naive for DB comparison)
         try:
-            timestamp_dt = datetime.fromisoformat(timestamp)
+            # Replace 'Z' with '+00:00' for fromisoformat compatibility
+            ts_str = timestamp.replace('Z', '+00:00')
+            timestamp_dt = datetime.fromisoformat(ts_str)
+            # Make timezone-naive for comparison with database datetimes
+            if timestamp_dt.tzinfo is not None:
+                timestamp_dt = timestamp_dt.replace(tzinfo=None)
         except ValueError:
             raise HTTPException(
                 status_code=400,
