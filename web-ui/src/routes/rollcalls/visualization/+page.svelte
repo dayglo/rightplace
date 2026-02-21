@@ -257,11 +257,17 @@
 				{:else}
 					<div class="flex gap-1 flex-wrap max-w-2xl">
 						<button
-							on:click={() => { treemapStore.setRollcalls([]); treemapStore.fetchData(); treemapStore.invalidateCache(); treemapStore.prefetchCache(); }}
-							class="px-2 py-1 text-xs rounded border transition-colors {$treemapStore.selectedRollcallIds.length === 0
+							on:click={() => {
+								const allIds = $treemapStore.availableRollcalls.map(rc => rc.id);
+								treemapStore.setRollcalls(allIds);
+								treemapStore.fetchData();
+								treemapStore.invalidateCache();
+								treemapStore.prefetchCache();
+							}}
+							class="px-2 py-1 text-xs rounded border transition-colors {$treemapStore.selectedRollcallIds.length === $treemapStore.availableRollcalls.length && $treemapStore.availableRollcalls.length > 0
 								? 'bg-purple-600 text-white border-purple-600'
 								: 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'}"
-							title="Show whole prison (management view)"
+							title="Show all rollcalls combined"
 						>
 							All
 						</button>
