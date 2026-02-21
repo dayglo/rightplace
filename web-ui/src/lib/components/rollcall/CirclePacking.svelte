@@ -48,6 +48,42 @@
 		red: '#EF4444'     // red-500
 	};
 
+	// Transform data to add inmate nodes as children of cells
+	function addInmateNodes(node: TreemapNode): TreemapNode {
+		// Deep copy to avoid mutating original
+		const result = { ...node };
+
+		if (node.children) {
+			result.children = node.children.map(addInmateNodes);
+		}
+
+		// If this is a cell with inmates, add them as children
+		const inmates = node.metadata?.inmates;
+		if (node.type === 'cell' && inmates && inmates.length > 0) {
+			const inmateChildren = inmates.map((inmate: any) => ({
+				id: `inmate-${inmate.inmate_id}`,
+				name: inmate.name,
+				type: 'inmate',
+				value: 1,  // Each inmate has equal weight
+				status: inmate.status === 'verified' ? 'green' :
+				        inmate.status === 'not_found' ? 'red' :
+				        inmate.status === 'wrong_location' ? 'amber' : 'grey',
+				metadata: {
+					inmate_count: 1,
+					verified_count: inmate.status === 'verified' ? 1 : 0,
+					failed_count: inmate.status === 'not_found' ? 1 : 0,
+					inmate_id: inmate.inmate_id,
+					original_status: inmate.status
+				}
+			}));
+
+			// Replace children with inmates (cells normally have no children)
+			result.children = inmateChildren;
+		}
+
+		return result;
+	}
+
 	function renderCirclePacking() {
 		if (!container || !data) return;
 
@@ -88,8 +124,9 @@
 				}
 			});
 
-		// Create hierarchy and pack layout
-		root = d3.hierarchy(data)
+		// Create hierarchy and pack layout (transform data to add inmate nodes)
+		const transformedData = addInmateNodes(data);
+		root = d3.hierarchy(transformedData)
 			.sum(d => d.value || 0)
 			.sort((a, b) => (b.value || 0) - (a.value || 0));
 
@@ -254,8 +291,11 @@
 				return colorMap[status] || colorMap.grey;
 			})
 			.attr('stroke', '#fff')
-			.attr('stroke-width', 2)
-			.attr('opacity', (d: any) => d.children ? 0.3 : 0.8)
+			.attr('stroke-width', (d: any) => d.data.type === 'inmate' ? 1 : 2)
+			.attr('opacity', (d: any) => {
+				if (d.data.type === 'inmate') return 0.9;  // High opacity for inmates
+				return d.children ? 0.3 : 0.8;
+			})
 			.attr('class', 'cursor-pointer hover:opacity-100 transition-opacity')
 			.on('click', (event: MouseEvent, d: any) => {
 				event.stopPropagation();
@@ -292,10 +332,24 @@
 				return '0.3em'; // Center for other types
 			})
 			.text((d: any) => {
-				// Only show label if circle is large enough
-				if (d.r < 20) return '';
+				// Only show label if circle is large enough (lower threshold for inmates)
+				const minRadius = d.data.type === 'inmate' ? 10 : 20;
+				if (d.r < minRadius) return '';
 				// Don't render the root/current level label (we have it in top right)
 				if (d.depth === 0) return '';
+
+				// For inmates, show first name or initials
+				if (d.data.type === 'inmate') {
+					const name = d.data.name || '';
+					const parts = name.split(' ');
+					// If circle is small, show initials
+					if (d.r < 25) {
+						return parts.map((p: string) => p.charAt(0).toUpperCase()).join('');
+					}
+					// Otherwise show first name (truncated if needed)
+					const firstName = parts[0];
+					return firstName.length > 8 ? firstName.substring(0, 7) + '.' : firstName;
+				}
 
 				// For landing, split: "Landing A1" -> show "Landing", add "A1" as tspan
 				if (d.data.type === 'landing') {
@@ -334,13 +388,18 @@
 				if (d.data.type === 'landing') {
 					return Math.min(d.r * 1.67, 100) + 'px';
 				}
+				// Inmate: scale to fit circle
+				if (d.data.type === 'inmate') {
+					return Math.min(d.r * 0.8, 12) + 'px';
+				}
 				return Math.min(d.r / 3, 14) + 'px';
 			})
 			.attr('fill', (d: any) => {
-				// Black text with white outline for prison, houseblock, wing, and landing; white for others
+				// Black text with white outline for prison, houseblock, wing, and landing
 				if (d.data.type === 'prison' || d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
 					return '#000';
 				}
+				// White text for inmates and other types
 				return '#fff';
 			})
 			.attr('font-weight', (d: any) => {
@@ -351,6 +410,10 @@
 				// White outline for prison, houseblock, wing, and landing
 				if (d.data.type === 'prison' || d.data.type === 'houseblock' || d.data.type === 'wing' || d.data.type === 'landing') {
 					return '#fff';
+				}
+				// Dark outline for inmate labels for readability
+				if (d.data.type === 'inmate') {
+					return '#000';
 				}
 				return 'none';
 			})
@@ -367,6 +430,9 @@
 				}
 				if (d.data.type === 'landing') {
 					return '6px'; // Thickest for 5x text
+				}
+				if (d.data.type === 'inmate') {
+					return '1px'; // Thin outline for small text
 				}
 				return '0';
 			})
@@ -454,27 +520,47 @@
 			const meta = d.data.metadata || {};
 
 			// Build tooltip HTML
-			let tooltipHtml = `
-				<strong>${d.data.name}</strong><br/>
-				Type: ${d.data.type}<br/>
-				Status: ${d.data.status}<br/>
-				Inmates: ${meta.inmate_count || 0}<br/>
-				Verified: ${meta.verified_count || 0}<br/>
-				Failed: ${meta.failed_count || 0}
-			`;
+			let tooltipHtml: string;
 
-			// If this is a cell with prisoner details, show them
-			if (d.data.type === 'cell' && meta.inmates && meta.inmates.length > 0) {
-				tooltipHtml += '<br/><br/><strong>Prisoners:</strong><br/>';
-				meta.inmates.forEach((inmate: any) => {
-					const statusIcon = inmate.status === 'verified' ? '✓' :
-					                   inmate.status === 'not_found' ? '✗' :
-					                   inmate.status === 'wrong_location' ? '⚠' : '○';
-					const statusColor = inmate.status === 'verified' ? '#10B981' :
-					                    inmate.status === 'not_found' ? '#EF4444' :
-					                    inmate.status === 'wrong_location' ? '#F59E0B' : '#6B7280';
-					tooltipHtml += `<span style="color: ${statusColor}">${statusIcon}</span> ${inmate.name}<br/>`;
-				});
+			// Simpler tooltip for inmates
+			if (d.data.type === 'inmate') {
+				const status = meta.original_status || 'pending';
+				const statusIcon = status === 'verified' ? '✓' :
+				                   status === 'not_found' ? '✗' :
+				                   status === 'wrong_location' ? '⚠' : '○';
+				const statusColor = status === 'verified' ? '#10B981' :
+				                    status === 'not_found' ? '#EF4444' :
+				                    status === 'wrong_location' ? '#F59E0B' : '#6B7280';
+				const statusLabel = status === 'verified' ? 'Verified' :
+				                    status === 'not_found' ? 'Not Found' :
+				                    status === 'wrong_location' ? 'Wrong Location' : 'Pending';
+				tooltipHtml = `
+					<strong>${d.data.name}</strong><br/>
+					<span style="color: ${statusColor}">${statusIcon} ${statusLabel}</span>
+				`;
+			} else {
+				tooltipHtml = `
+					<strong>${d.data.name}</strong><br/>
+					Type: ${d.data.type}<br/>
+					Status: ${d.data.status}<br/>
+					Inmates: ${meta.inmate_count || 0}<br/>
+					Verified: ${meta.verified_count || 0}<br/>
+					Failed: ${meta.failed_count || 0}
+				`;
+
+				// If this is a cell with prisoner details, show them
+				if (d.data.type === 'cell' && meta.inmates && meta.inmates.length > 0) {
+					tooltipHtml += '<br/><br/><strong>Prisoners:</strong><br/>';
+					meta.inmates.forEach((inmate: any) => {
+						const statusIcon = inmate.status === 'verified' ? '✓' :
+						                   inmate.status === 'not_found' ? '✗' :
+						                   inmate.status === 'wrong_location' ? '⚠' : '○';
+						const statusColor = inmate.status === 'verified' ? '#10B981' :
+						                    inmate.status === 'not_found' ? '#EF4444' :
+						                    inmate.status === 'wrong_location' ? '#F59E0B' : '#6B7280';
+						tooltipHtml += `<span style="color: ${statusColor}">${statusIcon}</span> ${inmate.name}<br/>`;
+					});
+				}
 			}
 
 			tooltip
