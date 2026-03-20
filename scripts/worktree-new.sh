@@ -7,7 +7,20 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-WORKTREE_BASE="/home/george_cairns/code/rightplace-worktrees"
+# Default worktree base can be overridden via environment variable WORKTREE_BASE.
+# Provide sensible OS-aware defaults so the script works across machines.
+if [ -z "$WORKTREE_BASE" ]; then
+    case "$(uname -s)" in
+        CYGWIN*|MINGW*|MSYS*)
+            # On Windows/msys, prefer using USERPROFILE
+            WORKTREE_BASE="$USERPROFILE\\code\\rightplace-worktrees"
+            ;;
+        *)
+            # Linux / macOS default to $HOME/code/rightplace-worktrees
+            WORKTREE_BASE="$HOME/code/rightplace-worktrees"
+            ;;
+    esac
+fi
 
 # Source port utilities
 source "$SCRIPT_DIR/worktree-ports.sh"
@@ -26,6 +39,18 @@ WORKTREE_NAME=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -h|--help)
+            echo "Usage: $0 <worktree-name> [options]"
+            echo "Options:"
+            echo "  --seed-db    Create fresh database and seed with HMP Oakwood data"
+            echo "  --copy-db    Copy existing database from main worktree"
+            echo "  -h, --help    Show this help"
+            echo "Environment variables (optional):"
+            echo "  WORKTREE_BASE  Base directory for new worktrees (default: \$HOME/code/rightplace-worktrees)"
+            echo "  MAIN_VENV      Path to python executable inside main venv (default derived from repo root)"
+            echo "  MAIN_DB        Path to main worktree sqlite DB (default derived from repo root)"
+            exit 0
+            ;;
         --seed-db)
             SEED_DB=true
             shift
@@ -81,6 +106,12 @@ if [ ! -d "$WORKTREE_BASE" ]; then
     mkdir -p "$WORKTREE_BASE"
 fi
 
+# Print derived configuration for visibility
+echo -e "${BLUE}Configuration:${NC}"
+echo "  REPO_ROOT:    $REPO_ROOT"
+echo "  WORKTREE_BASE: $WORKTREE_BASE"
+
+
 # Check if worktree already exists
 if [ -d "$WORKTREE_PATH" ]; then
     echo -e "${RED}Error: Worktree already exists at $WORKTREE_PATH${NC}"
@@ -121,8 +152,16 @@ create_worktree_env "$WORKTREE_PATH"
 source "$WORKTREE_PATH/.worktree.env"
 
 # Handle database setup
-MAIN_VENV="/home/george_cairns/code/rightplace/server/.venv/bin/python"
-MAIN_DB="/home/george_cairns/code/rightplace/server/data/prison_rollcall.db"
+# Default main venv and database paths. They can be overridden by
+# exporting MAIN_VENV or MAIN_DB in the environment before running the script.
+# By default we derive them from the repository root so the script works on
+# any machine that has the repo checked out.
+if [ -z "$MAIN_VENV" ]; then
+    MAIN_VENV="$REPO_ROOT/server/.venv/bin/python"
+fi
+if [ -z "$MAIN_DB" ]; then
+    MAIN_DB="$REPO_ROOT/server/data/prison_rollcall.db"
+fi
 WT_DB="$WORKTREE_PATH/server/data/prison_rollcall.db"
 
 if [ "$COPY_DB" = true ]; then
@@ -139,13 +178,20 @@ elif [ "$SEED_DB" = true ]; then
     cd "$WORKTREE_PATH/server"
     
     # Use the main venv to run the scripts
-    if [ -f "$MAIN_VENV" ]; then
+    if [ -x "$MAIN_VENV" ]; then
+        # MAIN_VENV points to the python executable inside the venv and must be executable.
+        echo "Using MAIN_VENV: $MAIN_VENV"
         "$MAIN_VENV" scripts/setup_db.py
         "$MAIN_VENV" scripts/seed_hmp_oakwood.py
         echo -e "${GREEN}✓ Database seeded with HMP Oakwood${NC}"
     else
-        echo -e "${YELLOW}Warning: Main venv not found. Activate a venv and run manually:${NC}"
-        echo "  python scripts/setup_db.py && python scripts/seed_hmp_oakwood.py"
+        echo -e "${YELLOW}Warning: Main venv not executable or not found at: $MAIN_VENV${NC}"
+        if [ -f "$REPO_ROOT/server/.venv/bin/activate" ]; then
+            echo "Suggested command to run in main worktree:"
+            echo "  source $REPO_ROOT/server/.venv/bin/activate && python scripts/setup_db.py && python scripts/seed_hmp_oakwood.py"
+        else
+            echo "No venv found at $REPO_ROOT/server/.venv. Create or set MAIN_VENV to a valid python executable."
+        fi
     fi
     cd "$REPO_ROOT"
 else
@@ -168,7 +214,8 @@ echo -e "   ${BLUE}code $WORKTREE_PATH${NC}"
 echo ""
 echo "2. Set up Python environment (if needed):"
 echo "   cd $WORKTREE_PATH/server"
-echo "   source /home/george_cairns/code/rightplace/server/.venv/bin/activate"
+echo "   # Activate the shared venv (or your worktree venv). Default venv path derived from repository root:"
+echo "   source $REPO_ROOT/server/.venv/bin/activate"
 echo "   # Or create a new venv: python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt"
 echo ""
 echo "3. Set up Node modules (if working on web-ui):"
