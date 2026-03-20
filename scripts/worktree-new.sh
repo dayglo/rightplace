@@ -7,6 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+
 # Default worktree base can be overridden via environment variable WORKTREE_BASE.
 # Provide sensible OS-aware defaults so the script works across machines.
 if [ -z "$WORKTREE_BASE" ]; then
