@@ -90,8 +90,50 @@
     try {
       const mod = await import('$lib/services/api');
       const fresh = await mod.getRollCalls();
-      rollcalls = fresh;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+      // fetch locations and details to compute human-readable location_name (same logic as server loader)
+      const locations = await mod.getLocations();
+
+      const detailsPromises = (fresh || []).map((rc: any) =>
+        mod.getRollCall(rc.id).then((d: any) => ({ ok: true, id: rc.id, detail: d })).catch((e: any) => ({ ok: false, id: rc.id, error: e }))
+      );
+      const detailsResults = await Promise.all(detailsPromises);
+
+      const normalized = (fresh || []).map((rc: any) => {
+        let location_name: string | null = rc.location_name ?? null;
+        const dr = detailsResults.find((r: any) => r.id === rc.id && r.ok && r.detail);
+        const detail = dr ? dr.detail : null;
+
+        if (!location_name && detail && Array.isArray(detail.route) && detail.route.length > 0) {
+          const stop = detail.route[0];
+          if (stop.location_name) location_name = stop.location_name;
+          else if (stop.location_id) {
+            const loc = locations.find((l: any) => l.id === stop.location_id);
+            if (loc) {
+              try {
+                location_name = mod.getLocationHierarchyPath(loc, locations);
+              } catch {
+                location_name = loc.name ?? stop.location_id;
+              }
+            } else {
+              location_name = stop.location_id;
+            }
+          }
+        }
+
+        if (!location_name && rc.location_id) {
+          const loc = locations.find((l: any) => l.id === rc.location_id);
+          if (loc) location_name = mod.getLocationHierarchyPath(loc, locations);
+          else location_name = rc.location_id;
+        }
+
+        if (!location_name) location_name = 'Unknown location';
+
+        return { ...rc, location_name };
+      });
+
+      rollcalls = normalized;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+
       // rebuild officers list when new data arrives
       const ids = new Set<string>();
       for (const r of rollcalls) if (r.officer_id) ids.add(r.officer_id);

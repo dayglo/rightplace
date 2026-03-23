@@ -8,6 +8,10 @@
   <div class="flex items-start justify-between">
     <div class="flex-1 min-w-0">
       <h3 class="text-sm font-semibold text-gray-900 truncate">{rollcall.name}</h3>
+      {#if (() => true)()}
+        {@const locationDisplay = rollcall.location_name ?? (rollcall.route && rollcall.route.length ? (rollcall.route[0].location_name ?? rollcall.route[0].location_id) : null) ?? 'Unknown location'}
+        <p class="text-xs text-gray-600 mt-1">Location: {locationDisplay}</p>
+      {/if}
       <p class="text-xs text-gray-500 mt-1">Scheduled: {new Date(rollcall.scheduled_at ?? rollcall.scheduled_time ?? rollcall.scheduled).toLocaleString()}</p>
     </div>
         <div class="ml-3 flex-shrink-0 text-right">
