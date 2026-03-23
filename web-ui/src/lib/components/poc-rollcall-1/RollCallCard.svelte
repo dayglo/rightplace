@@ -4,7 +4,13 @@
   export let selected: boolean = false;
 </script>
 
-<article role="listitem" class="bg-white rounded-lg shadow-sm p-4 mb-3" class:selected={selected}>
+<a
+  role="listitem"
+  href={`/poc-rollcall-1/rollcalls/${rollcall.id}/preview`}
+  class="block bg-white rounded-lg shadow-sm p-4 mb-3"
+  class:selected={selected}
+  aria-current={selected ? 'true' : 'false'}
+>
   <div class="flex items-start justify-between">
     <div class="flex-1 min-w-0">
       <h3 class="text-sm font-semibold text-gray-900 truncate">{rollcall.name}</h3>
@@ -29,7 +35,7 @@
       <div class="text-xs text-gray-500">Progress: {Math.round((rollcall.progress_percentage ?? 0))}%</div>
     </div>
   </div>
-</article>
+</a>
 
 <style>
   :global(.selected) {
