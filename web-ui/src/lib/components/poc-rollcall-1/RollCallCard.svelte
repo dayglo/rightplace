@@ -21,7 +21,7 @@
       <p class="text-xs text-gray-500 mt-1">Scheduled: {new Date(rollcall.scheduled_at ?? rollcall.scheduled_time ?? rollcall.scheduled).toLocaleString()}</p>
     </div>
         <div class="ml-3 flex-shrink-0 text-right">
-          <StatusBadge status={rollcall.status} />
+          <StatusBadge status={rollcall.status} rollcall={rollcall} />
         </div>
   </div>
 

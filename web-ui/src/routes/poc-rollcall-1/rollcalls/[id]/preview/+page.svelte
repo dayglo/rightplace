@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { startRollCall, getExpectedPrisoners } from '$lib/services/api';
+  import { startRollCall, getExpectedPrisoners, getRollCall } from '$lib/services/api';
 
   export let data: any;
 
@@ -63,6 +63,12 @@
 
   async function onStart() {
     if (!rollCall) return;
+    // If roll call is already in progress, just continue
+    if (rollCall.status === 'in_progress') {
+      goto(`/poc-rollcall-1/rollcalls/${rollCall.id}/execute`);
+      return;
+    }
+
     const ok = confirm('Start roll call now?');
     if (!ok) return;
     isStarting = true;
@@ -72,6 +78,18 @@
       goto(`/poc-rollcall-1/rollcalls/${rollCall.id}/execute`);
     } catch (err) {
       console.error('Failed to start roll call', err);
+      // Re-fetch roll call in case another client started it meanwhile
+      try {
+        const fresh = await getRollCall(rollCall.id);
+        if (fresh?.status === 'in_progress') {
+          // update local rollCall and continue
+          rollCall = fresh;
+          goto(`/poc-rollcall-1/rollcalls/${rollCall.id}/execute`);
+          return;
+        }
+      } catch (innerErr) {
+        console.warn('Failed to refresh roll call after start failure', innerErr);
+      }
       alert('Failed to start roll call');
     } finally {
       isStarting = false;
@@ -89,6 +107,7 @@
 <style>
   .page { padding: 1rem; }
   .header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem; }
+  .banner { background:#fffbeb; border:1px solid #fef3c7; color:#92400e; padding:0.5rem 0.75rem; border-radius:6px; margin-bottom:0.75rem }
   .card { background: #fff; border-radius: 8px; padding: 0.75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04); margin-bottom: 0.75rem; }
   .stop { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
   .stop:last-child { border-bottom: none; }
@@ -111,6 +130,12 @@
   {#if !rollCall}
     <div class="card">No roll call data available.</div>
   {:else}
+    {#if rollCall.status === 'in_progress'}
+      <div class="banner">
+        This roll call is already in progress. You can continue execution where it was left off.
+        <button style="margin-left:12px;padding:0.25rem 0.5rem;border-radius:6px;border:none;background:#0ea5a3;color:white;font-weight:600" on:click={() => goto(`/poc-rollcall-1/rollcalls/${rollCall.id}/execute`)}>Continue</button>
+      </div>
+    {/if}
     <div class="card">
       <div><strong>Stops:</strong> {rollCall.route?.length ?? 0}</div>
       <div><strong>Estimated time:</strong> {formatTimeEstimate(rollCall.estimated_time_seconds)}</div>
@@ -194,7 +219,7 @@
     <div style="height:64px"></div>
 
     <div class="start-btn">
-      <button class="primary" on:click={onStart} disabled={isStarting}>{isStarting ? 'Starting…' : 'Start Roll Call'}</button>
+      <button class="primary" on:click={onStart} disabled={isStarting}>{isStarting ? 'Starting…' : (rollCall?.status === 'in_progress' ? 'Continue Roll Call' : 'Start Roll Call')}</button>
     </div>
   {/if}
 </div>
