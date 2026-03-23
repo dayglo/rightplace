@@ -6,7 +6,21 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-WORKTREE_BASE="/home/george_cairns/code/rightplace-worktrees"
+
+# Default worktree base can be overridden via environment variable WORKTREE_BASE.
+# Provide sensible OS-aware defaults so the script works across machines.
+if [ -z "$WORKTREE_BASE" ]; then
+    case "$(uname -s)" in
+        CYGWIN*|MINGW*|MSYS*)
+            # On Windows/msys, prefer using USERPROFILE
+            WORKTREE_BASE="$USERPROFILE\\code\\rightplace-worktrees"
+            ;;
+        *)
+            # Linux / macOS default to $HOME/code/rightplace-worktrees
+            WORKTREE_BASE="$HOME/code/rightplace-worktrees"
+            ;;
+    esac
+fi
 
 # Colors for output
 RED='\033[0;31m'
@@ -16,6 +30,19 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Check if name provided
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    echo "Usage: $0 <worktree-name> [--keep-branch]"
+    echo "Remove a git worktree and optionally delete its branch."
+    echo ""
+    echo "Options:"
+    echo "  --keep-branch    Do not delete the branch associated with the worktree"
+    echo "  -h, --help       Show this help"
+    echo ""
+    echo "Environment variables (optional):"
+    echo "  WORKTREE_BASE    Base directory for worktrees (default: \$HOME/code/rightplace-worktrees)"
+    exit 0
+fi
+
 if [ -z "$1" ]; then
     echo -e "${RED}Error: Worktree name required${NC}"
     echo ""
@@ -27,7 +54,8 @@ if [ -z "$1" ]; then
     echo ""
     echo "Current worktrees:"
     git worktree list | grep -v "$REPO_ROOT " | while read -r line; do
-        echo "  $(basename $(echo "$line" | awk '{print $1}'))"
+        line_path=$(echo "$line" | awk '{print $1}')
+        echo "  $(basename "$line_path")"
     done
     exit 1
 fi
@@ -35,6 +63,11 @@ fi
 WORKTREE_NAME="$1"
 KEEP_BRANCH="$2"
 WORKTREE_PATH="$WORKTREE_BASE/$WORKTREE_NAME"
+
+# Print derived configuration for visibility
+echo -e "${BLUE}Configuration:${NC}"
+echo "  REPO_ROOT:     $REPO_ROOT"
+echo "  WORKTREE_BASE: $WORKTREE_BASE"
 
 # Derive branch name (same logic as worktree-new.sh)
 BRANCH_NAME=$(echo "$WORKTREE_NAME" | sed 's/-/\//' )
